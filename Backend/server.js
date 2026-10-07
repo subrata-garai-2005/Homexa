@@ -62,7 +62,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
   res.json({
     success: true,
     message: '🏡 Homexa API is running!',
@@ -102,6 +102,13 @@ if (fs.existsSync(frontendDistPath)) {
       return next();
     }
     res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({
+      success: true,
+      message: '🏡 Homexa API is running! (Frontend build not found. Please run "npm run build" in Frontend folder)',
+    });
   });
 }
 
