@@ -12,10 +12,10 @@ const seedProperties = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ MongoDB Connected for seeding');
 
-    // Find or create an existing host user
-    let host = await User.findOne({ isHost: true }) || await User.findOne({ role: 'host' }) || await User.findOne();
+    // Find or create demo host user
+    let host = await User.findOne({ email: 'host@demo.com' });
     if (!host) {
-      console.log('👤 Creating demo host and guest accounts...');
+      console.log('👤 Creating demo host account (host@demo.com)...');
       host = await User.create({
         name: 'Demo Host',
         email: 'host@demo.com',
@@ -25,8 +25,10 @@ const seedProperties = async () => {
       });
     }
 
+    // Find or create demo guest user
     let demoGuest = await User.findOne({ email: 'guest@demo.com' });
     if (!demoGuest) {
+      console.log('👤 Creating demo guest account (guest@demo.com)...');
       await User.create({
         name: 'Demo Guest',
         email: 'guest@demo.com',
