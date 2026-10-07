@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, clearError } from '../../store/slices/authSlice';
+import { toast } from '../../utils/toast';
 import { FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
 
 const Register = () => {
@@ -16,8 +17,18 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await dispatch(registerUser(form));
-    if (registerUser.fulfilled.match(result)) navigate('/');
+    const result = await dispatch(registerUser({
+      name: form.name.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      phone: form.phone.trim()
+    }));
+    if (registerUser.fulfilled.match(result)) {
+      toast.success('Account created successfully! Welcome to Homexa.');
+      navigate('/');
+    } else if (result.payload) {
+      toast.error(result.payload);
+    }
   };
 
   return (

@@ -27,24 +27,12 @@ const PORT = process.env.PORT || 5000;
 // Connect DB
 connectDB();
 
-// Middleware
-const allowedOrigins = [
-  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, '')) : ['http://localhost:5173']),
-  'http://localhost:3000',
-  'http://localhost:5173'
-];
-
+// Middleware - Allow dynamic origin for seamless fullstack deployment on any domain/IP
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, postman) or matching allowed origins
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, false);
-    }
-  },
+  origin: true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json({ 
   limit: '10mb',

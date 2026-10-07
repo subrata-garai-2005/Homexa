@@ -54,6 +54,13 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+    }
+    if (error.name === 'ValidationError') {
+      const msg = Object.values(error.errors).map(e => e.message).join(', ');
+      return res.status(400).json({ success: false, message: msg });
+    }
     res.status(500).json({ success: false, message: error.message || 'Registration failed' });
   }
 };

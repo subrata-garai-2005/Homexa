@@ -8,7 +8,8 @@ export const loginUser = createAsyncThunk('auth/login', async ({ email, password
     localStorage.setItem('homely_user', JSON.stringify(res.data.user));
     return res.data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Login failed');
+    const message = err.response?.data?.message || err.message || 'Login failed';
+    return rejectWithValue(message);
   }
 });
 
@@ -19,7 +20,8 @@ export const registerUser = createAsyncThunk('auth/register', async (data, { rej
     localStorage.setItem('homely_user', JSON.stringify(res.data.user));
     return res.data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Registration failed');
+    const message = err.response?.data?.message || err.message || 'Registration failed';
+    return rejectWithValue(message);
   }
 });
 

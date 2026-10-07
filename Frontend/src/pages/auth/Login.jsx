@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
+import { toast } from '../../utils/toast';
 import { FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
 
 const Login = () => {
@@ -24,9 +25,12 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await dispatch(loginUser({ email, password }));
+    const result = await dispatch(loginUser({ email: email.trim(), password }));
     if (loginUser.fulfilled.match(result)) {
+      toast.success('Welcome back!');
       navigate(from, { replace: true });
+    } else if (result.payload) {
+      toast.error(result.payload);
     }
   };
 
