@@ -30,11 +30,6 @@ const Login = () => {
     }
   };
 
-  const fillDemo = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-  };
-
   return (
     <div className="min-h-[80vh] flex">
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
@@ -69,20 +64,6 @@ const Login = () => {
               Don't have an account? <Link to="/register" className="font-semibold text-gray-900 underline">Sign up</Link>
             </div>
 
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-              <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-gray-500 uppercase tracking-wide">Demo credentials</span></div>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-600 space-y-2">
-              <div className="flex items-center justify-between">
-                <span><strong className="text-gray-900">Guest:</strong> guest@demo.com / password123</span>
-                <button type="button" onClick={() => fillDemo('guest@demo.com', 'password123')} className="text-brand font-semibold hover:underline">Use</button>
-              </div>
-              <div className="flex items-center justify-between">
-                <span><strong className="text-gray-900">Host:</strong> host@demo.com / password123</span>
-                <button type="button" onClick={() => fillDemo('host@demo.com', 'password123')} className="text-brand font-semibold hover:underline">Use</button>
-              </div>
-            </div>
           </form>
         </div>
       </div>
