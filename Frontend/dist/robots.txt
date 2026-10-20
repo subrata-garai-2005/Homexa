@@ -1,0 +1,19 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Allow: /properties
+Allow: /map
+
+# Disallow private and account-specific pages
+Disallow: /bookings
+Disallow: /bookings/*
+Disallow: /profile
+Disallow: /wishlist
+Disallow: /host
+Disallow: /host/*
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+# Sitemap location
+Sitemap: /sitemap.xml
