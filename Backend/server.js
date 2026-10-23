@@ -21,9 +21,13 @@ import bookingRoutes from './src/routes/bookingRoutes.js';
 import paymentRoutes from './src/routes/paymentRoutes.js';
 import aiRoutes from './src/routes/aiRoutes.js';
 import Property from './src/models/Property.js';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Trust reverse proxies (EC2, Nginx, Load Balancers) to read client IP accurately
+app.set('trust proxy', 1);
 
 // Connect DB
 connectDB();
@@ -77,7 +81,34 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.use('/api/auth', authRoutes);
+// Rate Limiting Configuration
+// 1. General API Rate Limiter (200 requests per 15 mins per IP)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again after 15 minutes'
+  }
+});
+
+// 2. Auth Rate Limiter (20 attempts per 15 mins to protect against brute-force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many login/registration attempts. Please try again after 15 minutes'
+  }
+});
+
+// Apply rate limiting to APIs (Static files, Google verification, robots.txt are exempt)
+app.use('/api', apiLimiter);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
