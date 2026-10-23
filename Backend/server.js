@@ -83,10 +83,19 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Google Search Console verification route
+// Google Search Console verification routes
 app.get('/google7777e5ba595168f6.html', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.send('google-site-verification: google7777e5ba595168f6.html');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.status(200).send('google-site-verification: google7777e5ba595168f6.html');
+});
+
+// Dynamic fallback for any Google verification html file (e.g. google<token>.html)
+app.get(/^\/google([a-z0-9_-]+)\.html$/i, (req, res) => {
+  const filename = req.path.replace(/^\//, '');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.status(200).send(`google-site-verification: ${filename}`);
 });
 
 // Dynamic robots.txt
