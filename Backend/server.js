@@ -26,8 +26,19 @@ import rateLimit from 'express-rate-limit';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Security: Disable X-Powered-By header to hide backend technology
+app.disable('x-powered-by');
+
 // Trust reverse proxies (EC2, Nginx, Load Balancers) to read client IP accurately
 app.set('trust proxy', 1);
+
+// Block any attempt to access sensitive files (.env, .git, etc.)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/.') || req.path.includes('/.')) {
+    return res.status(403).json({ success: false, message: 'Access forbidden' });
+  }
+  next();
+});
 
 // Connect DB
 connectDB();

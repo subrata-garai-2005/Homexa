@@ -10,6 +10,15 @@ import 'leaflet/dist/leaflet.css';
 
 injectStore(store);
 
+// Silence all console logs and warnings in production
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+}
+
 // Suppress benign browser extension content script communication errors
 if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
