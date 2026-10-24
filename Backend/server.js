@@ -139,10 +139,14 @@ app.get('/google*.html', (req, res) => {
 
 
 // Dynamic robots.txt
-app.get('/robots.txt', (req, res) => {
-  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-  const host = req.get('host');
-  res.type('text/plain').send(
+app.get(['/robots.txt', '//robots.txt'], (req, res) => {
+  const forwardedProto = req.headers['x-forwarded-proto']?.split(',')[0].trim();
+  const host = req.get('host') || 'localhost:5000';
+  const protocol = forwardedProto || req.protocol || 'http';
+
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(
 `# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
@@ -167,10 +171,11 @@ Sitemap: ${protocol}://${host}/sitemap.xml
 });
 
 // Dynamic sitemap.xml
-app.get('/sitemap.xml', async (req, res) => {
+app.get(['/sitemap.xml', '//sitemap.xml'], async (req, res) => {
   try {
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.get('host');
+    const forwardedProto = req.headers['x-forwarded-proto']?.split(',')[0].trim();
+    const host = req.get('host') || 'localhost:5000';
+    const protocol = forwardedProto || req.protocol || 'http';
     const baseUrl = `${protocol}://${host}`;
     const today = new Date().toISOString().split('T')[0];
 
@@ -215,13 +220,15 @@ app.get('/sitemap.xml', async (req, res) => {
 
     xml += '\n</urlset>';
 
-    res.header('Content-Type', 'application/xml');
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(xml);
   } catch (error) {
     console.error('Error generating dynamic sitemap:', error);
     res.status(500).send('Error generating sitemap');
   }
 });
+
 
 // Serve frontend build if dist folder exists (Single-port fullstack deployment)
 if (fs.existsSync(frontendDistPath)) {

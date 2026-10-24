@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { format, differenceInDays } from 'date-fns';
+import SEO from '../components/common/SEO';
 
 const amenityIcons = {
   wifi: FiWifi,
@@ -334,6 +335,40 @@ const PropertyDetails = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 transition-colors">
+      {/* Dynamic SEO & JSON-LD Structured Data for Google Indexing */}
+      <SEO
+        title={`${property.title} in ${property.location?.city || 'Vacation Stay'}`}
+        description={
+          property.description
+            ? property.description.slice(0, 155)
+            : `Book ${property.title} in ${property.location?.city || ''}. Instant confirmation, verified hosts, and best rates on Homexa.`
+        }
+        image={images[0]?.url || images[0]}
+        type="article"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "LodgingBusiness",
+          "name": property.title,
+          "description": property.description,
+          "image": images.map(img => (typeof img === 'string' ? img : img?.url)).filter(Boolean),
+          "priceRange": `₹${property.price} / night`,
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": property.location?.city,
+            "addressRegion": property.location?.state,
+            "addressCountry": property.location?.country || "IN"
+          },
+          ...(property.rating?.count > 0 ? {
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": property.rating?.average || 5,
+              "reviewCount": property.rating?.count || 1,
+              "bestRating": "5"
+            }
+          } : {})
+        }}
+      />
+
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">

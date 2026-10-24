@@ -6,6 +6,7 @@ import PropertyCard from '../components/property/PropertyCard';
 import SearchFilters from '../components/property/SearchFilters';
 import PropertyMap from '../components/map/PropertyMap';
 import { FiGrid, FiMap, FiLoader } from 'react-icons/fi';
+import SEO from '../components/common/SEO';
 
 const Properties = () => {
   const dispatch = useDispatch();
@@ -53,8 +54,23 @@ const Properties = () => {
     return pagesArr;
   };
 
+  const dynamicTitle = filters?.city
+    ? `Vacation Rentals & Stays in ${filters.city}`
+    : filters?.propertyType
+    ? `${filters.propertyType.charAt(0).toUpperCase() + filters.propertyType.slice(1)} Rentals & Stays`
+    : 'Explore Vacation Rentals & Unique Stays';
+
+  const dynamicDesc = filters?.city
+    ? `Find and book top rated vacation rentals, luxury villas, and homestays in ${filters.city}. Instant booking and verified hosts on Homexa.`
+    : 'Explore handpicked vacation rentals, beachfront villas, cozy mountain cabins, and apartments on Homexa.';
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] transition-colors duration-200">
+      <SEO
+        title={dynamicTitle}
+        description={dynamicDesc}
+        keywords={`vacation rentals, ${filters?.city || 'holiday homes'}, stays, villas, Homexa`}
+      />
       <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-[72px] z-30 transition-colors">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <SearchFilters onSearch={handleSearch} />

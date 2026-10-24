@@ -6,6 +6,7 @@ import PropertyCard from '../components/property/PropertyCard';
 import SearchFilters from '../components/property/SearchFilters';
 import { FiArrowRight, FiStar, FiShield, FiZap, FiMapPin, FiTrendingUp, FiUsers, FiGlobe } from 'react-icons/fi';
 import { useReveal, useCountUp } from '../utils/useReveal';
+import SEO from '../components/common/SEO';
 
 const Reveal = ({ children, delay = 0, className = '', as: Tag = 'div' }) => {
   const ref = useReveal();
@@ -60,6 +61,36 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO
+        title="Vacation Rentals, Luxury Villas & Unique Stays"
+        description="Discover and book handpicked vacation rentals, beachfront villas, cozy mountain cabins, and modern apartments with Homexa. Instant booking and verified hosts."
+        keywords="vacation rentals, holiday homes, luxury villas, homestay, rent apartments, travel booking, Homexa, villas in Goa, homestays in Manali"
+        schema={{
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              "name": "Homexa",
+              "url": typeof window !== 'undefined' ? window.location.origin : '',
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": `${typeof window !== 'undefined' ? window.location.origin : ''}/properties?search={search_term_string}`
+                },
+                "query-input": "required name=search_term_string"
+              }
+            },
+            {
+              "@type": "Organization",
+              "name": "Homexa",
+              "url": typeof window !== 'undefined' ? window.location.origin : '',
+              "logo": `${typeof window !== 'undefined' ? window.location.origin : ''}/assets/logo.png`
+            }
+          ]
+        }}
+      />
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-[#0B0F19] text-white isolate">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920')] bg-cover bg-center opacity-25 scale-105" />

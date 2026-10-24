@@ -4,6 +4,7 @@ import { fetchProperties } from '../store/slices/propertySlice';
 import PropertyMap from '../components/map/PropertyMap';
 import PropertyCard from '../components/property/PropertyCard';
 import { FiMap } from 'react-icons/fi';
+import SEO from '../components/common/SEO';
 
 const MapView = () => {
   const dispatch = useDispatch();
@@ -16,6 +17,10 @@ const MapView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO
+        title="Interactive Map - Explore Stays & Vacation Rentals"
+        description="Explore vacation rentals, beach villas, and boutique stays on an interactive map. Find properties near top destinations on Homexa."
+      />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex justify-between items-center mb-6">
           <div>

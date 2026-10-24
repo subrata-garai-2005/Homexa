@@ -15,5 +15,5 @@ Disallow: /login
 Disallow: /register
 Disallow: /api/
 
-# Sitemap location
+# Sitemap location (handled dynamically by Homexa server)
 Sitemap: /sitemap.xml
