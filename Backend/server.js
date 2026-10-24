@@ -187,6 +187,7 @@ app.get(['/sitemap.xml', '//sitemap.xml'], async (req, res) => {
     }
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}/</loc>
@@ -228,6 +229,128 @@ app.get(['/sitemap.xml', '//sitemap.xml'], async (req, res) => {
     res.status(500).send('Error generating sitemap');
   }
 });
+
+// XSL Stylesheet for humans viewing sitemap in Chrome/Firefox
+app.get('/sitemap.xsl', (req, res) => {
+  res.setHeader('Content-Type', 'text/xsl; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0"
+  xmlns:html="http://www.w3.org/TR/REC-html40"
+  xmlns:sitemap="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes"/>
+  <xsl:template match="/">
+    <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+      <head>
+        <title>XML Sitemap | Homexa</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <style type="text/css">
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1f2937;
+            background: #f9fafb;
+            margin: 0;
+            padding: 30px 16px;
+          }
+          .container {
+            max-width: 980px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+          }
+          h1 {
+            color: #111827;
+            font-size: 24px;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          p.desc {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 24px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+          }
+          th {
+            background: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 2px solid #e5e7eb;
+          }
+          td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #4b5563;
+          }
+          tr:hover td {
+            background: #f9fafb;
+          }
+          a {
+            color: #FF385C;
+            text-decoration: none;
+            word-break: break-all;
+          }
+          a:hover {
+            text-decoration: underline;
+          }
+          .badge {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 11px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>🏡 Homexa XML Sitemap</h1>
+          <p class="desc">This XML sitemap is generated dynamically for Google, Bing, and search engines. It contains <xsl:value-of select="count(sitemap:urlset/sitemap:url)"/> indexed URLs.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>URL</th>
+                <th>Priority</th>
+                <th>Change Frequency</th>
+                <th>Last Modified</th>
+              </tr>
+            </thead>
+            <tbody>
+              <xsl:for-each select="sitemap:urlset/sitemap:url">
+                <tr>
+                  <td>
+                    <xsl:variable name="itemURL">
+                      <xsl:value-of select="sitemap:loc"/>
+                    </xsl:variable>
+                    <a href="{$itemURL}">
+                      <xsl:value-of select="sitemap:loc"/>
+                    </a>
+                  </td>
+                  <td><span class="badge"><xsl:value-of select="sitemap:priority"/></span></td>
+                  <td><xsl:value-of select="sitemap:changefreq"/></td>
+                  <td><xsl:value-of select="sitemap:lastmod"/></td>
+                </tr>
+              </xsl:for-each>
+            </tbody>
+          </table>
+        </div>
+      </body>
+    </html>
+  </xsl:template>
+</xsl:stylesheet>`);
+});
+
 
 
 // Serve frontend build if dist folder exists (Single-port fullstack deployment)
