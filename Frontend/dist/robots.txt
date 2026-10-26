@@ -15,5 +15,4 @@ Disallow: /login
 Disallow: /register
 Disallow: /api/
 
-# Sitemap location (handled dynamically by Homexa server)
-Sitemap: /sitemap.xml
+# Sitemap location is dynamically generated and served with full absolute URL at /sitemap.xml

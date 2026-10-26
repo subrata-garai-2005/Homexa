@@ -22,6 +22,7 @@ import paymentRoutes from './src/routes/paymentRoutes.js';
 import aiRoutes from './src/routes/aiRoutes.js';
 import Property from './src/models/Property.js';
 import rateLimit from 'express-rate-limit';
+import { getBaseUrl, prerenderRoute } from './src/utils/seoPrerender.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,6 +32,16 @@ app.disable('x-powered-by');
 
 // Trust reverse proxies (EC2, Nginx, Load Balancers) to read client IP accurately
 app.set('trust proxy', 1);
+
+// Normalize trailing slashes: 301 permanent redirect /path/ to /path (exclude root '/')
+app.use((req, res, next) => {
+  if (req.path.length > 1 && req.path.endsWith('/')) {
+    const query = req.url.slice(req.path.length);
+    const safePath = req.path.slice(0, -1);
+    return res.redirect(301, safePath + query);
+  }
+  next();
+});
 
 // Block any attempt to access sensitive files (.env, .git, etc.)
 app.use((req, res, next) => {
@@ -140,9 +151,7 @@ app.get('/google*.html', (req, res) => {
 
 // Dynamic robots.txt
 app.get(['/robots.txt', '//robots.txt'], (req, res) => {
-  const forwardedProto = req.headers['x-forwarded-proto']?.split(',')[0].trim();
-  const host = req.get('host') || 'localhost:5000';
-  const protocol = forwardedProto || req.protocol || 'http';
+  const baseUrl = getBaseUrl(req);
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -165,7 +174,7 @@ Disallow: /register
 Disallow: /api/
 
 # Sitemap location
-Sitemap: ${protocol}://${host}/sitemap.xml
+Sitemap: ${baseUrl}/sitemap.xml
 `
   );
 });
@@ -173,10 +182,7 @@ Sitemap: ${protocol}://${host}/sitemap.xml
 // Dynamic sitemap.xml
 app.get(['/sitemap.xml', '//sitemap.xml'], async (req, res) => {
   try {
-    const forwardedProto = req.headers['x-forwarded-proto']?.split(',')[0].trim();
-    const host = req.get('host') || 'localhost:5000';
-    const protocol = forwardedProto || req.protocol || 'http';
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = getBaseUrl(req);
     const today = new Date().toISOString().split('T')[0];
 
     let properties = [];
@@ -355,12 +361,29 @@ app.get('/sitemap.xsl', (req, res) => {
 
 // Serve frontend build if dist folder exists (Single-port fullstack deployment)
 if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
-  app.get('*', (req, res, next) => {
+  // Serve static assets without intercepting root '/'
+  app.use(express.static(frontendDistPath, { index: false }));
+
+  // Dynamic SEO Pre-rendering & HTML handler for all client-side routes
+  app.get('*', async (req, res, next) => {
     if (req.originalUrl.startsWith('/api')) {
       return next();
     }
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
+    try {
+      const indexPath = path.join(frontendDistPath, 'index.html');
+      if (!fs.existsSync(indexPath)) {
+        return res.status(404).send('Frontend build index.html not found');
+      }
+
+      const rawHtml = fs.readFileSync(indexPath, 'utf-8');
+      const renderedHtml = await prerenderRoute(req, rawHtml);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+      return res.status(200).send(renderedHtml);
+    } catch (err) {
+      console.error('Error in SEO prerender handler:', err);
+      return res.sendFile(path.join(frontendDistPath, 'index.html'));
+    }
   });
 } else {
   app.get('/', (req, res) => {
