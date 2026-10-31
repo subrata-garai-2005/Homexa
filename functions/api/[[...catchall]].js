@@ -30,7 +30,6 @@ export async function onRequest(context) {
 
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && request.body) {
     init.body = request.body;
-    init.duplex = 'half';
   }
 
   try {
@@ -60,3 +59,4 @@ export async function onRequest(context) {
     );
   }
 }
+
