@@ -2,10 +2,11 @@ export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
 
-  // Target AWS Backend (uses BACKEND_URL env var if set, otherwise defaults to the EC2 URL)
+  // Target AWS Backend
   const backendBase = (env.BACKEND_URL || 'http://44.222.204.56:5000').replace(/\/+$/, '');
   const targetUrl = `${backendBase}${url.pathname}${url.search}`;
 
+  // Handle CORS Preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -18,9 +19,14 @@ export async function onRequest(context) {
     });
   }
 
+  // Forward headers to AWS backend
   const forwardHeaders = new Headers(request.headers);
+  forwardHeaders.delete('host');
+  forwardHeaders.delete('cf-connecting-ip');
+  forwardHeaders.delete('cf-ray');
+  forwardHeaders.delete('cf-visitor');
   forwardHeaders.set('X-Forwarded-Host', url.host);
-  forwardHeaders.set('X-Forwarded-Proto', url.protocol.replace(':', ''));
+  forwardHeaders.set('X-Forwarded-Proto', 'https');
 
   const init = {
     method: request.method,
@@ -48,7 +54,7 @@ export async function onRequest(context) {
     return new Response(
       JSON.stringify({
         success: false,
-        message: 'Cloudflare could not reach AWS Backend. Check if EC2 is running and Port 5000 is open in Security Group.',
+        message: 'Cloudflare Proxy could not reach AWS EC2 Backend http://44.222.204.56:5000',
         error: err.message,
         target: targetUrl,
       }),
@@ -59,4 +65,3 @@ export async function onRequest(context) {
     );
   }
 }
-
