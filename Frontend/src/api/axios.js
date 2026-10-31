@@ -8,11 +8,11 @@ export const injectStore = (store) => {
 
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) {
-    if (typeof window !== 'undefined' && envUrl.includes('localhost') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      return '/api';
-    }
+  if (envUrl && envUrl !== '/api') {
     return envUrl;
+  }
+  if (import.meta.env.PROD) {
+    return 'https://homexa.garaisubrata2005.workers.dev/api';
   }
   return '/api';
 };
