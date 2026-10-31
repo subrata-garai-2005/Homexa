@@ -6,16 +6,8 @@ export const injectStore = (store) => {
   storeInstance = store;
 };
 
-const getBaseURL = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && envUrl !== '/api') {
-    return envUrl;
-  }
-  if (import.meta.env.PROD) {
-    return 'https://homexa.garaisubrata2005.workers.dev/api';
-  }
-  return '/api';
-};
+// Always use same-origin /api so Cloudflare Functions proxy securely to AWS EC2 (No Mixed-Content, No 405)
+const getBaseURL = () => '/api';
 
 const api = axios.create({
   baseURL: getBaseURL(),
