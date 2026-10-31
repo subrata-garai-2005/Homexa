@@ -1,3 +1,4 @@
+// Always use same-origin /api — Worker handles both static files and API proxy
 import axios from 'axios';
 
 let storeInstance = null;
@@ -6,24 +7,14 @@ export const injectStore = (store) => {
   storeInstance = store;
 };
 
-// Production: use AWS EC2 backend directly (HTTP — will be fixed with nginx/SSL later)
-// Development: use local Vite proxy /api
-const getBaseURL = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  return '/api';
-};
-
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: '/api',
   withCredentials: false,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Request interceptor - attach token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('homely_token');
@@ -35,7 +26,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
