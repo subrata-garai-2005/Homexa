@@ -36,6 +36,42 @@ export const getBaseUrl = (req) => {
 };
 
 /**
+ * Detects whether incoming request is from a search engine crawler / social preview bot.
+ */
+export const isBot = (req) => {
+  const userAgent = (req?.headers?.['user-agent'] || '').toLowerCase();
+  const botKeywords = [
+    'googlebot',
+    'bingbot',
+    'yandex',
+    'baiduspider',
+    'facebookexternalhit',
+    'twitterbot',
+    'rogerbot',
+    'linkedinbot',
+    'embedly',
+    'quora link preview',
+    'showyoubot',
+    'outbrain',
+    'pinterest',
+    'slackbot',
+    'vkshare',
+    'w3c_validator',
+    'redditbot',
+    'applebot',
+    'whatsapp',
+    'flipboard',
+    'tumblr',
+    'bitlybot',
+    'skypeuripreview',
+    'discordbot',
+    'google-inspectiontool',
+    'chrome-lighthouse'
+  ];
+  return botKeywords.some(bot => userAgent.includes(bot));
+};
+
+/**
  * Replaces meta tags, canonical link, and body content inside the raw index.html template.
  */
 const injectMetadataAndContent = (html, { title, description, canonicalUrl, ogImage, schema, bodyContent }) => {
@@ -301,6 +337,7 @@ const renderPropertyDetailBody = (p) => {
  * Main SEO Pre-rendering route dispatcher.
  */
 export const prerenderRoute = async (req, rawHtml) => {
+  const isCrawler = isBot(req);
   const baseUrl = getBaseUrl(req);
   const cleanPath = req.path.replace(/\/+$/, '') || '/';
   const canonicalUrl = `${baseUrl}${cleanPath === '/' ? '' : cleanPath}`;
@@ -352,7 +389,7 @@ export const prerenderRoute = async (req, rawHtml) => {
           }
         ]
       },
-      bodyContent: renderHomeBody(properties)
+      bodyContent: isCrawler ? renderHomeBody(properties) : null
     });
   }
 
@@ -376,7 +413,7 @@ export const prerenderRoute = async (req, rawHtml) => {
       description: 'Explore handpicked vacation rentals, beachfront villas, cozy mountain cabins, and apartments on Homexa. Verified hosts and instant confirmation.',
       canonicalUrl,
       ogImage: `${baseUrl}/assets/property2.webp`,
-      bodyContent: renderPropertiesBody(properties)
+      bodyContent: isCrawler ? renderPropertiesBody(properties) : null
     });
   }
 
@@ -419,7 +456,7 @@ export const prerenderRoute = async (req, rawHtml) => {
             "addressCountry": property.location?.country || "IN"
           }
         },
-        bodyContent: renderPropertyDetailBody(property)
+        bodyContent: isCrawler ? renderPropertyDetailBody(property) : null
       });
     }
   }
@@ -461,7 +498,7 @@ export const prerenderRoute = async (req, rawHtml) => {
       description: 'Explore vacation rentals, beach villas, and boutique stays on an interactive map. Find properties near top destinations on Homexa.',
       canonicalUrl,
       ogImage: `${baseUrl}/assets/property2.webp`,
-      bodyContent: mapBody
+      bodyContent: isCrawler ? mapBody : null
     });
   }
 
