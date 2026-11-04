@@ -30,9 +30,17 @@ export const getProtocol = (req) => {
  * Returns full base URL e.g. https://example.com
  */
 export const getBaseUrl = (req) => {
+  if (process.env.FRONTEND_URL) {
+    try {
+      const parsed = new URL(process.env.FRONTEND_URL);
+      return parsed.origin;
+    } catch {}
+  }
   const protocol = getProtocol(req);
-  const host = req.get('host') || 'localhost:5000';
-  return `${protocol}://${host}`;
+  const forwardedHost = req.headers['x-forwarded-host']?.split(',')[0].trim();
+  const rawHost = forwardedHost || req.get('host') || 'somexa.netlify.app';
+  const safeHost = /^[a-zA-Z0-9.-]+(:\d+)?$/.test(rawHost) ? rawHost : 'somexa.netlify.app';
+  return `${protocol}://${safeHost}`;
 };
 
 /**
@@ -94,16 +102,17 @@ const injectMetadataAndContent = (html, { title, description, canonicalUrl, ogIm
 
   // Canonical URL & og:url
   if (canonicalUrl) {
+    const safeCanonicalUrl = escapeHtml(canonicalUrl);
     if (modifiedHtml.includes('rel="canonical"')) {
-      modifiedHtml = modifiedHtml.replace(/<link\s+rel=["']canonical["'][^>]*>/i, `<link rel="canonical" href="${canonicalUrl}" />`);
+      modifiedHtml = modifiedHtml.replace(/<link\s+rel=["']canonical["'][^>]*>/i, `<link rel="canonical" href="${safeCanonicalUrl}" />`);
     } else {
-      modifiedHtml = modifiedHtml.replace('</head>', `  <link rel="canonical" href="${canonicalUrl}" />\n</head>`);
+      modifiedHtml = modifiedHtml.replace('</head>', `  <link rel="canonical" href="${safeCanonicalUrl}" />\n</head>`);
     }
 
     if (modifiedHtml.includes('property="og:url"')) {
-      modifiedHtml = modifiedHtml.replace(/<meta\s+property=["']og:url["'][^>]*>/i, `<meta property="og:url" content="${canonicalUrl}" />`);
+      modifiedHtml = modifiedHtml.replace(/<meta\s+property=["']og:url["'][^>]*>/i, `<meta property="og:url" content="${safeCanonicalUrl}" />`);
     } else {
-      modifiedHtml = modifiedHtml.replace('</head>', `  <meta property="og:url" content="${canonicalUrl}" />\n</head>`);
+      modifiedHtml = modifiedHtml.replace('</head>', `  <meta property="og:url" content="${safeCanonicalUrl}" />\n</head>`);
     }
   }
 
@@ -113,9 +122,10 @@ const injectMetadataAndContent = (html, { title, description, canonicalUrl, ogIm
     modifiedHtml = modifiedHtml.replace(/<meta\s+name=["']twitter:image["'][^>]*>/i, `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`);
   }
 
-  // Structured Data (JSON-LD)
+  // Structured Data (JSON-LD) - escape </script to prevent tag breakout
   if (schema) {
-    const schemaScript = `\n  <script type="application/ld+json">\n  ${JSON.stringify(schema, null, 2)}\n  </script>`;
+    const safeJson = JSON.stringify(schema, null, 2).replace(/<\/script/gi, '<\\/script');
+    const schemaScript = `\n  <script type="application/ld+json">\n  ${safeJson}\n  </script>`;
     modifiedHtml = modifiedHtml.replace('</head>', `${schemaScript}\n</head>`);
   }
 
