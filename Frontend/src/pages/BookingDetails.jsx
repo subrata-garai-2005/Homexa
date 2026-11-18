@@ -41,7 +41,8 @@ const BookingDetails = () => {
   if (loading) return <div className="max-w-4xl mx-auto p-8"><div className="card p-8 animate-pulse h-96 bg-gray-100" /></div>;
   if (!booking) return <div className="text-center py-20">Booking not found</div>;
 
-  const isHost = booking.host?._id === user?._id || booking.host === user?._id;
+  // BUG FIX: MongoDB ObjectIds must be compared as strings, not object references
+  const isHost = (booking.host?._id?.toString() || booking.host?.toString()) === user?._id?.toString();
   const property = booking.property;
 
   return (

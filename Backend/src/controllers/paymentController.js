@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import crypto from 'crypto';
 import { getRazorpay } from '../config/razorpay.js';
 import Booking from '../models/Booking.js';
@@ -29,6 +30,31 @@ const safeTimingCompare = (a, b) => {
 export const confirmBookingPayment = async (booking, { razorpayPaymentId, razorpaySignature, method = 'razorpay', webhookVerified = false }) => {
   if (booking.payment?.status === 'paid' && booking.status === 'confirmed') {
     return booking; // already confirmed & paid
+  }
+
+  // Concurrency Guard: Check for overlapping confirmed bookings before finalizing payment
+  const propertyId = booking.property?._id || booking.property;
+  const conflict = await Booking.findOne({
+    property: propertyId,
+    status: 'confirmed',
+    _id: { $ne: booking._id },
+    checkIn: { $lt: booking.checkOut },
+    checkOut: { $gt: booking.checkIn }
+  });
+
+  if (conflict) {
+    booking.status = 'cancelled';
+    booking.cancellation = {
+      cancelledAt: new Date(),
+      reason: 'Dates were confirmed by another guest concurrently; automatic refund required'
+    };
+    if (razorpayPaymentId) booking.payment.razorpayPaymentId = razorpayPaymentId;
+    booking.payment.status = 'refund_pending';
+    await booking.save();
+    const conflictErr = new Error('Selected dates are no longer available. This reservation has been cancelled and will be refunded.');
+    conflictErr.statusCode = 409;
+    conflictErr.isConflict = true;
+    throw conflictErr;
   }
 
   booking.payment.status = 'paid';

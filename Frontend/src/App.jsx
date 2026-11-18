@@ -52,6 +52,7 @@ const AnimatedRoutes = () => {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
         <Route path="/host" element={<ProtectedRoute><HostDashboard /></ProtectedRoute>} />
+        <Route path="/host/bookings" element={<Navigate to="/host" replace />} />
         <Route path="/host/new" element={<ProtectedRoute><PropertyForm /></ProtectedRoute>} />
         <Route path="/host/edit/:id" element={<ProtectedRoute><PropertyForm /></ProtectedRoute>} />
 

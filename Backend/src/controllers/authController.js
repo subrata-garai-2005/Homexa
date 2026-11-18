@@ -110,6 +110,10 @@ export const login = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).populate('wishlist');
+    // BUG FIX: null check for user
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profile' });
@@ -165,6 +169,10 @@ export const toggleWishlist = async (req, res) => {
     }
 
     const user = await User.findById(req.user._id);
+    // BUG FIX: null check
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     const index = user.wishlist.findIndex(id => id.toString() === propertyId);
     if (index > -1) {
@@ -184,6 +192,27 @@ export const toggleWishlist = async (req, res) => {
 export const becomeHost = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+    // BUG FIX: null check — user might be deleted between token issuance and this call
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    // BUG FIX: prevent redundant save if already a host
+    if (user.isHost) {
+      return res.json({
+        success: true,
+        message: 'You are already a host!',
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          role: user.role,
+          isHost: user.isHost,
+          phone: user.phone,
+          bio: user.bio
+        }
+      });
+    }
     user.isHost = true;
     user.role = 'host';
     await user.save();
@@ -212,6 +241,10 @@ export const getWishlist = async (req, res) => {
       path: 'wishlist',
       populate: { path: 'host', select: 'name avatar' }
     });
+    // BUG FIX: null check
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
     res.json({ success: true, wishlist: user.wishlist });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch wishlist' });

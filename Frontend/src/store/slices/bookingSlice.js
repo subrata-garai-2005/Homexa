@@ -65,22 +65,30 @@ const bookingSlice = createSlice({
     error: null
   },
   reducers: {
-    clearSelectedBooking: (state) => { state.selectedBooking = null; }
+    clearSelectedBooking: (state) => { state.selectedBooking = null; },
+    clearBookingError: (state) => { state.error = null; }
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMyBookings.pending, (state) => { state.loading = true; })
+      .addCase(fetchMyBookings.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchMyBookings.fulfilled, (state, action) => { state.loading = false; state.myBookings = action.payload; })
       .addCase(fetchMyBookings.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
 
-      .addCase(fetchHostBookings.pending, (state) => { state.loading = true; })
+      .addCase(fetchHostBookings.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchHostBookings.fulfilled, (state, action) => { state.loading = false; state.hostBookings = action.payload; })
       .addCase(fetchHostBookings.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
 
-      .addCase(createBooking.fulfilled, (state, action) => { state.myBookings.unshift(action.payload); })
+      // BUG FIX: createBooking was missing pending and rejected cases — loading spinner never showed
+      .addCase(createBooking.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(createBooking.fulfilled, (state, action) => {
+        state.loading = false;
+        state.myBookings.unshift(action.payload);
+      })
+      .addCase(createBooking.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
 
       .addCase(fetchBookingById.pending, (state) => { 
-        state.loading = true; 
+        state.loading = true;
+        state.error = null;
         state.selectedBooking = null;
       })
       .addCase(fetchBookingById.fulfilled, (state, action) => { state.loading = false; state.selectedBooking = action.payload; })
@@ -90,7 +98,7 @@ const bookingSlice = createSlice({
         state.error = action.payload; 
       })
 
-      .addCase(cancelBooking.pending, (state) => { state.loading = true; })
+      .addCase(cancelBooking.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(cancelBooking.fulfilled, (state, action) => {
         state.loading = false;
         const updateList = (list) => list.map(b => b._id === action.payload._id ? action.payload : b);
@@ -100,14 +108,17 @@ const bookingSlice = createSlice({
       })
       .addCase(cancelBooking.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
 
+      .addCase(updateBookingStatus.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(updateBookingStatus.fulfilled, (state, action) => {
+        state.loading = false;
         const updateList = (list) => list.map(b => b._id === action.payload._id ? action.payload : b);
         state.myBookings = updateList(state.myBookings);
         state.hostBookings = updateList(state.hostBookings);
         if (state.selectedBooking?._id === action.payload._id) state.selectedBooking = action.payload;
-      });
+      })
+      .addCase(updateBookingStatus.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
   }
 });
 
-export const { clearSelectedBooking } = bookingSlice.actions;
+export const { clearSelectedBooking, clearBookingError } = bookingSlice.actions;
 export default bookingSlice.reducer;

@@ -16,7 +16,7 @@ const MapView = () => {
   }, [dispatch]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 transition-colors">
       <SEO
         title="Interactive Map - Explore Stays & Vacation Rentals"
         description="Explore vacation rentals, beach villas, and boutique stays on an interactive map. Find properties near top destinations on Homexa."
@@ -24,8 +24,12 @@ const MapView = () => {
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="font-display text-3xl font-bold flex items-center gap-3"><FiMap /> Explore on Map</h1>
-            <p className="text-gray-600 mt-1">{properties.length} stays • Click markers to view</p>
+            <h1 className="font-display text-3xl font-bold flex items-center gap-3 text-gray-900 dark:text-white">
+              <FiMap className="text-primary-500" /> Explore on Map
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              {properties.length} stays • Click markers to view
+            </p>
           </div>
         </div>
 
@@ -34,7 +38,9 @@ const MapView = () => {
             <PropertyMap properties={properties} height="80vh" onMarkerClick={setSelected} />
           </div>
           <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
-            <h3 className="font-semibold sticky top-0 bg-gray-50 py-2">All Properties ({properties.length})</h3>
+            <h3 className="font-semibold sticky top-0 bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-white py-2 z-10 transition-colors">
+              All Properties ({properties.length})
+            </h3>
             {properties.map(p => (
               <div key={p._id} className={`transition-all ${selected?._id === p._id ? 'ring-2 ring-primary-500 rounded-2xl' : ''}`}>
                 <PropertyCard property={p} />

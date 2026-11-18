@@ -20,31 +20,43 @@ const Reveal = ({ children, delay = 0, className = '', as: Tag = 'div' }) => {
 const Stat = ({ icon: Icon, target, decimals = 0, suffix = '', label }) => {
   const [ref, value] = useCountUp(target);
   return (
-    <div ref={ref} className="flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 px-4 py-3">
-      <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+    <div ref={ref} className="flex items-center gap-3.5 rounded-xl bg-white/[0.08] backdrop-blur-sm border border-white/[0.12] px-4 py-3">
+      <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0 text-stone-200">
         <Icon className="w-4 h-4" />
       </div>
       <div>
-        <p className="text-lg sm:text-xl font-bold tabular-nums leading-none">
+        <p className="text-lg sm:text-xl font-semibold tabular-nums leading-none text-white">
           {value.toFixed(decimals)}{suffix}
         </p>
-        <p className="text-[11px] sm:text-xs text-white/70 mt-1">{label}</p>
+        <p className="text-xs text-stone-300/80 mt-1">{label}</p>
       </div>
     </div>
   );
 };
 
 const featuredCities = [
-  { name: 'Goa', img: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=600', count: '120+ stays', span: 'lg:col-span-2 lg:row-span-2' },
-  { name: 'Jaipur', img: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=600', count: '85+ stays', span: '' },
-  { name: 'Manali', img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600', count: '64+ stays', span: '' },
-  { name: 'Kerala', img: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600', count: '92+ stays', span: 'lg:col-span-2' },
+  { name: 'Goa', img: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800', count: '120+ stays', span: 'lg:col-span-2 lg:row-span-2' },
+  { name: 'Jaipur', img: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=800', count: '85+ stays', span: '' },
+  { name: 'Manali', img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800', count: '64+ stays', span: '' },
+  { name: 'Kerala', img: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800', count: '92+ stays', span: 'lg:col-span-2' },
 ];
 
 const features = [
-  { icon: FiShield, title: 'Verified stays', desc: 'Every property is verified by our team for quality and safety.', grad: 'from-emerald-500 to-teal-500' },
-  { icon: FiZap, title: 'Homexa AI Concierge', desc: 'Smart day-by-day itineraries, instant recommendations, and 24/7 travel concierge.', grad: 'from-amber-500 to-orange-500' },
-  { icon: FiMapPin, title: 'Map exploration', desc: 'Discover hidden gems with interactive maps and local insights.', grad: 'from-sky-500 to-indigo-500' },
+  {
+    icon: FiShield,
+    title: 'Verified Hospitality',
+    desc: 'Every stay is personally inspected for architectural quality, comfort, and verified hosts.',
+  },
+  {
+    icon: FiZap,
+    title: 'Homexa Concierge',
+    desc: 'Custom day-by-day itineraries, authentic local recommendations, and 24/7 travel concierge.',
+  },
+  {
+    icon: FiMapPin,
+    title: 'Curated Neighbourhoods',
+    desc: 'Explore scenic stays with walkable highlights, secluded spots, and local insights.',
+  },
 ];
 
 const Home = () => {
@@ -92,79 +104,80 @@ const Home = () => {
       />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#0B0F19] text-white isolate">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920')] bg-cover bg-center opacity-25 scale-105" />
-        {/* Aurora blobs */}
-        <div className="absolute -top-32 -left-24 w-[32rem] h-[32rem] rounded-full bg-primary-500/40 blur-[110px] animate-blob -z-0" />
-        <div className="absolute top-10 right-[-10rem] w-[30rem] h-[30rem] rounded-full bg-violet-600/40 blur-[110px] animate-blob-slow" />
-        <div className="absolute bottom-[-12rem] left-1/3 w-[28rem] h-[28rem] rounded-full bg-sky-500/30 blur-[110px] animate-blob" />
-        {/* Grid texture */}
-        <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(white_1px,transparent_1px),linear-gradient(90deg,white_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F19] via-[#0B0F19]/30 to-transparent" />
+      <section className="relative overflow-hidden bg-[#141210] text-white isolate">
+        {/* Real Architectural / Vacation Photography Background with Warm Tone Vignette */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-40"
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=80')",
+          }}
+        />
+        {/* Soft, natural warm stone gradient masks (no neon orbs, no grids) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#141210] via-[#141210]/60 to-[#141210]/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#141210]/80 via-transparent to-transparent" />
 
-        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-24 sm:pt-20 sm:pb-32 lg:pt-28 lg:pb-40">
-          <div className="max-w-3xl animate-slide-up">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 rounded-full px-3.5 py-1 text-xs sm:text-sm mb-5 sm:mb-7">
-              <span className="relative flex w-2 h-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
-              </span>
-              AI-powered search live • 5000+ verified homes
+        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24 sm:pt-24 sm:pb-32 lg:pt-28 lg:pb-36">
+          <div className="max-w-2xl">
+            {/* Quiet, credible context badge */}
+            <div className="inline-flex items-center gap-2.5 bg-white/10 backdrop-blur-sm border border-white/15 rounded-full px-3.5 py-1.5 text-xs sm:text-sm text-stone-200 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>Curated collection of 5,000+ verified stays</span>
             </div>
-            <h1 className="font-display text-4xl sm:text-6xl lg:text-[72px] font-bold leading-[1.05] sm:leading-[0.98] tracking-tight">
-              Find your{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-fuchsia-400 to-violet-400 bg-[length:200%_auto] animate-gradient-pan">
-                perfect stay
-              </span>
-              <br className="hidden sm:block" /> anywhere
+
+            {/* Solid, confident headline without gradient clips */}
+            <h1 className="font-display text-4xl sm:text-6xl lg:text-[68px] font-semibold leading-[1.08] sm:leading-[1.04] tracking-tight text-white">
+              Handpicked homes with authentic character
             </h1>
-            <p className="mt-5 sm:mt-7 text-sm sm:text-lg text-gray-300 leading-relaxed max-w-xl">
-              Curated villas, cabins, beachfront homes and unique stays. Instant booking, verified hosts, and Homexa AI concierge.
+
+            {/* Honest, calm subhead */}
+            <p className="mt-5 sm:mt-6 text-base sm:text-lg text-stone-300 leading-relaxed max-w-xl">
+              Villas, coastal retreats, and architectural cabins. Verified for comfort and design, with 24/7 travel concierge.
             </p>
-            <div className="mt-7 sm:mt-9 flex flex-col sm:flex-row gap-3">
+
+            {/* Quiet, deliberate actions */}
+            <div className="mt-8 sm:mt-9 flex flex-col sm:flex-row gap-3">
               <Link
                 to="/properties"
                 id="hero-explore-btn"
-                className="group relative overflow-hidden bg-white text-gray-900 px-7 py-3.5 rounded-full font-semibold transition-all hover:shadow-[0_0_40px_-5px_rgba(255,56,92,0.6)] flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="bg-white text-stone-900 hover:bg-stone-100 px-7 py-3.5 rounded-full font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base shadow-sm"
               >
-                Explore stays <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                Explore stays <FiArrowRight className="w-4 h-4" />
               </Link>
               <button
                 type="button"
                 id="hero-homexa-btn"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-homexa', { detail: { tab: 'planner' } }))}
-                className="bg-white/10 backdrop-blur border border-white/20 text-white px-7 py-3.5 rounded-full font-semibold hover:bg-white/20 hover:border-white/40 transition-all flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
+                className="bg-white/10 hover:bg-white/15 text-white border border-white/20 px-7 py-3.5 rounded-full font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
               >
-                <FiZap className="text-amber-300" /> Plan with Homexa AI
+                <FiZap className="w-4 h-4 text-amber-300" /> Plan with Homexa AI
               </button>
             </div>
 
-            <div className="mt-10 sm:mt-14 grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-3 max-w-2xl">
+            {/* Grounded social proof stats */}
+            <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl">
               <Stat icon={FiStar} target={4.8} decimals={1} suffix="/5" label="Average rating" />
-              <Stat icon={FiUsers} target={10} suffix="k+" label="Happy guests" />
-              <Stat icon={FiGlobe} target={50} suffix="+" label="Cities" />
+              <Stat icon={FiUsers} target={10} suffix="k+" label="Guests hosted" />
+              <Stat icon={FiGlobe} target={50} suffix="+" label="Destinations" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Search (glass, overlapping hero) */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
-        <div className="animate-slide-up [animation-delay:150ms] [animation-fill-mode:both]">
-          <SearchFilters onSearch={handleSearch} />
-        </div>
+      {/* Search (clean offset overlapping hero) */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
+        <SearchFilters onSearch={handleSearch} />
       </div>
 
       {/* Featured properties */}
-      <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <Reveal className="flex justify-between items-end mb-8">
+      <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <Reveal className="flex justify-between items-end mb-10">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary-500 mb-2">Handpicked</p>
-            <h2 className="font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Featured stays</h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Homes with exceptional hospitality</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2">Handpicked</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-stone-900 dark:text-white">Featured stays</h2>
+            <p className="text-stone-600 dark:text-stone-400 mt-2 text-sm sm:text-base">Homes recognized for exceptional architecture and hospitality</p>
           </div>
-          <Link to="/properties" className="hidden md:flex items-center gap-2 text-sm font-semibold hover:text-primary-600 transition-colors group">
-            View all <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+          <Link to="/properties" className="hidden md:flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors">
+            View all <FiArrowRight className="w-4 h-4" />
           </Link>
         </Reveal>
 
@@ -181,7 +194,7 @@ const Home = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
             {properties.slice(0, 8).map((property, i) => (
-              <Reveal key={property._id} delay={(i % 4) * 90}>
+              <Reveal key={property._id} delay={(i % 4) * 60}>
                 <PropertyCard property={property} />
               </Reveal>
             ))}
@@ -189,29 +202,34 @@ const Home = () => {
         )}
       </section>
 
-      {/* Cities — bento grid */}
-      <section className="bg-white dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800 transition-colors">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      {/* Cities — Bento Grid with natural depth */}
+      <section className="bg-stone-50/80 dark:bg-stone-900/40 border-y border-stone-200/60 dark:border-stone-800/80 transition-colors">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <Reveal>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary-500 mb-2">Trending</p>
-            <h2 className="font-display text-3xl font-bold tracking-tight mb-8 text-gray-900 dark:text-white">Popular destinations</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2">Destinations</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mb-10 text-stone-900 dark:text-white">Popular destinations</h2>
           </Reveal>
           <div className="grid grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 gap-4 lg:h-[460px]">
             {featuredCities.map((city, i) => (
-              <Reveal key={city.name} delay={i * 80} className={`${city.span} h-48 lg:h-auto`}>
+              <Reveal key={city.name} delay={i * 60} className={`${city.span} h-48 lg:h-auto`}>
                 <Link
                   to={`/properties?city=${city.name}`}
-                  className="group relative block h-full rounded-3xl overflow-hidden"
+                  className="group relative block h-full rounded-2xl overflow-hidden"
                 >
-                  <img src={city.img} alt={city.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1200ms] ease-out" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between text-white">
+                  <img
+                    src={city.img}
+                    alt={city.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between text-white">
                     <div>
-                      <h3 className="font-semibold text-xl">{city.name}</h3>
-                      <p className="text-sm text-white/80">{city.count}</p>
+                      <h3 className="font-semibold text-lg sm:text-xl leading-tight">{city.name}</h3>
+                      <p className="text-xs sm:text-sm text-stone-300 mt-0.5">{city.count}</p>
                     </div>
-                    <span className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-                      <FiArrowRight />
+                    <span className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <FiArrowRight className="w-4 h-4 text-white" />
                     </span>
                   </div>
                 </Link>
@@ -221,41 +239,41 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features — spotlight cards */}
+      {/* Features — Quiet, Craft-first Cards */}
       <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid md:grid-cols-3 gap-6">
           {features.map((f, i) => (
-            <Reveal key={f.title} delay={i * 120}>
-              <div className="group relative h-full card p-7 hover:-translate-y-1 hover:shadow-large transition-all duration-300">
-                <div className={`absolute -top-16 -right-16 w-40 h-40 rounded-full bg-gradient-to-br ${f.grad} opacity-0 group-hover:opacity-20 blur-2xl transition-opacity duration-500`} />
-                <div className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${f.grad} text-white flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform`}>
-                  <f.icon className="w-6 h-6" />
+            <Reveal key={f.title} delay={i * 80}>
+              <div className="h-full rounded-2xl bg-white dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 p-8 transition-colors hover:border-stone-300 dark:hover:border-stone-700">
+                <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 flex items-center justify-center mb-6">
+                  <f.icon className="w-5 h-5" />
                 </div>
-                <h3 className="relative font-semibold text-lg mb-2 text-gray-900 dark:text-white">{f.title}</h3>
-                <p className="relative text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+                <h3 className="font-semibold text-lg mb-2 text-stone-900 dark:text-white">{f.title}</h3>
+                <p className="text-stone-600 dark:text-stone-400 text-sm leading-relaxed">{f.desc}</p>
               </div>
             </Reveal>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      {/* CTA — Warm Architectural Host Banner */}
+      <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <Reveal>
-          <div className="rounded-[32px] bg-gray-900 text-white p-8 lg:p-12 relative overflow-hidden isolate">
-            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary-500/30 blur-3xl animate-blob" />
-            <div className="absolute -bottom-24 left-1/4 w-80 h-80 rounded-full bg-violet-600/25 blur-3xl animate-blob-slow" />
-            <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-              <div>
-                <h2 className="font-display text-3xl lg:text-4xl font-bold tracking-tight">Become a host and earn</h2>
-                <p className="text-gray-400 mt-3 max-w-xl">List your property in minutes, get AI-generated descriptions, and reach thousands of travelers.</p>
+          <div className="rounded-3xl bg-[#181614] text-white p-8 lg:p-14 border border-stone-800 relative overflow-hidden">
+            <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+              <div className="max-w-xl">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-400/90 mb-3">Hosting with Homexa</p>
+                <h2 className="font-display text-3xl lg:text-4xl font-semibold tracking-tight text-white">Share your home with travelers who care</h2>
+                <p className="text-stone-400 mt-3 text-sm sm:text-base leading-relaxed">
+                  List your property in minutes. Verified guests, dedicated host protection, and 24/7 concierge support.
+                </p>
               </div>
               <Link
                 to="/host/new"
                 id="cta-start-hosting"
-                className="bg-white text-gray-900 px-8 py-3.5 rounded-full font-semibold hover:scale-105 hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.5)] transition-all flex items-center gap-2 shrink-0"
+                className="bg-white text-stone-900 hover:bg-stone-100 px-8 py-4 rounded-full font-medium transition-colors flex items-center gap-2 text-sm sm:text-base shrink-0 shadow-sm"
               >
-                <FiTrendingUp /> Start hosting
+                <FiTrendingUp className="w-4 h-4" /> Start hosting
               </Link>
             </div>
           </div>

@@ -2,8 +2,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // 1. Proxy /api/* to AWS EC2 Backend
-    if (url.pathname.startsWith('/api')) {
+    // 1. Proxy /api/* and dynamic sitemap to Backend API
+    if (url.pathname.startsWith('/api') || url.pathname === '/sitemap.xml' || url.pathname === '/sitemap.xsl') {
       // CORS Preflight
       if (request.method === 'OPTIONS') {
         return new Response(null, {
@@ -16,9 +16,34 @@ export default {
         });
       }
 
-      const backendUrl = `http://44.222.204.56:5000${url.pathname}${url.search}`;
+      const backendBase = (env.BACKEND_URL || '').replace(/\/+$/, '');
+
+      if (!backendBase) {
+        // Fallback to static asset if backend is not configured for sitemap
+        if (url.pathname === '/sitemap.xml' && env.ASSETS) {
+          return env.ASSETS.fetch(request);
+        }
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'BACKEND_URL environment variable is not configured in Cloudflare.',
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          }
+        );
+      }
+
+      const backendUrl = `${backendBase}${url.pathname}${url.search}`;
       const forwardHeaders = new Headers(request.headers);
       forwardHeaders.delete('host');
+      const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '';
+      if (clientIp) {
+        forwardHeaders.set('X-Forwarded-For', clientIp);
+      }
+      forwardHeaders.set('X-Forwarded-Host', url.host);
+      forwardHeaders.set('X-Forwarded-Proto', 'https');
 
       const init = {
         method: request.method,
@@ -40,6 +65,10 @@ export default {
           headers: resHeaders,
         });
       } catch (err) {
+        // Fallback to static asset if backend is unreachable for sitemap
+        if (url.pathname === '/sitemap.xml' && env.ASSETS) {
+          return env.ASSETS.fetch(request);
+        }
         return new Response(JSON.stringify({ success: false, error: err.message }), {
           status: 502,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },

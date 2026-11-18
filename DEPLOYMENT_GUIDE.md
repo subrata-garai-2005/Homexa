@@ -1,166 +1,150 @@
-# 🚀 Homely_Hub (Homexa) - Cloudflare & AWS Deployment Guide
+# 🚀 Homely_Hub (Homexa) - 100% Cloudflare & Free Backend Deployment Guide
 
-Yeh guide aapko Frontend ko **Cloudflare Pages** par aur Backend ko **AWS (App Runner ya EC2)** par smoothly deploy karne ka complete process step-by-step batati hai.
+Yeh guide aapko **AWS se sab kuch safely delete karne** aur poora project **Cloudflare (Pages + Workers)** par smoothly deploy karne ka complete process step-by-step batati hai.
 
 ---
 
-## 🏗️ Architecture Summary
+## 🏗️ New Architecture Summary (Zero AWS, Zero Bill)
 
 * **Frontend**: React 19 + Vite SPA (Hosted on **Cloudflare Pages** - Free CDN, auto-SSL, instant builds)
-* **Backend**: Node.js + Express API (Hosted on **AWS App Runner** or **AWS EC2**)
-* **Database**: MongoDB Atlas
+* **API Proxy / Edge Functions**: **Cloudflare Pages Functions / Cloudflare Workers** (`worker.js` & `functions/api/`)
+* **Backend**: Node.js + Express API (Hosted on **Render.com** or **Railway** - 100% Free tier, zero Linux maintenance)
+* **Database**: MongoDB Atlas (Free M0 Cluster)
 * **Storage & Payments**: ImageKit.io + Razorpay
-* **DNS & Security**: Cloudflare DNS (SSL Full / Strict, DDoS protection)
+* **DNS & Security**: Cloudflare DNS (SSL Full/Strict, DDoS Protection, Global Edge Caching)
 
 ---
 
-## 1️⃣ STEP 1: Deploy Backend on AWS
+## 🛑 STEP 1: AWS Deployment Delete / Terminate Karein (Billing Bachayein)
 
-### Option A: AWS App Runner (Sabse Aasan aur Best - No Linux Management)
+Aapka AWS EC2 instance ya App Runner delete karne ke liye:
 
-Aapke repo me `Backend/apprunner.yaml` aur `Backend/Dockerfile` already set hai.
+### A. AWS EC2 Instance Terminate Karein:
+1. **AWS Console** (`console.aws.amazon.com`) me login karein.
+2. Search bar me **EC2** type karein aur **Instances** par click karein.
+3. Apna Homely Hub instance (IP: `44.222.204.56` ya similar) select karein.
+4. Top right me **Instance State** button par click karein -> **Terminate instance** select karein.
+5. Confirm karein. Kuch hi minute me instance shut down aur permanently delete ho jayega.
+6. **Elastic IP check karein**: Left sidebar me **Network & Security -> Elastic IPs** par jayein. Agar koi IP allocated hai, usse select karke **Actions -> Release Elastic IP addresses** kar dein (taaki koi unattached IP charge na lage).
 
-1. **GitHub par code push karein**:
+### B. AWS App Runner Service Delete Karein (Agar banaya tha):
+1. AWS Console me **App Runner** search karein.
+2. Agar koi active service hai, uske name par click karein.
+3. **Actions** menu par click karein -> **Delete service** confirm karein.
+
+---
+
+## 🌐 STEP 2: Deploy Backend (Node.js + MongoDB) on Render (100% Free)
+
+Cloudflare Workers serverless V8 isolates par chalta hai jisme persistent MongoDB TCP connections directly run nahi hote. Isliye Node.js/Express backend ko **Render.com** (Free) par deploy karna sabse best aur clean solution hai:
+
+1. **GitHub par changes push karein**:
    ```bash
    git add .
-   git commit -m "Add Cloudflare and AWS deployment configs"
+   git commit -m "Remove AWS configs and configure full Cloudflare deployment"
    git push origin main
    ```
-2. **AWS Console** me login karein aur **AWS App Runner** search karein.
-3. **Create an App Runner service** par click karein:
-   * **Source**: `Source code repository` (GitHub account link karein).
-   * **Repository**: `Homely_Hub`
+2. [Render.com](https://render.com) par login karein (Sign in with GitHub).
+3. Dashboard me **New +** button par click karein -> **Web Service** select karein.
+4. Apna GitHub repository `Homely_Hub` select karein.
+5. **Settings configure karein**:
+   * **Name**: `homely-backend` (ya apni pasand ka name)
+   * **Region**: Singapore / Frankfurt / Oregon (koi bhi select karein)
    * **Branch**: `main`
-   * **Source directory**: `/Backend`
-   * **Deployment settings**: `Automatic`
-4. **Configure build**:
-   * Select karein: **Use a configuration file** (Yeh `apprunner.yaml` auto-detect kar lega).
-5. **Configure service (Environment Variables)**:
-   Add Environment Variables:
+   * **Root Directory**: `Backend`
+   * **Runtime**: `Node`
+   * **Build Command**: `npm install`
+   * **Start Command**: `npm start`
+   * **Instance Type**: `Free`
+6. **Environment Variables** add karein:
    * `NODE_ENV`: `production`
    * `PORT`: `5000`
-   * `MONGO_URI`: `mongodb+srv://<user>:<password>@cluster0.mongodb.net/homelyhub`
-   * `JWT_SECRET`: `your_strong_jwt_secret_key`
+   * `MONGO_URI`: `mongodb+srv://...` (Aapka MongoDB Atlas connection string)
+   * `JWT_SECRET`: (Aapka secret key)
    * `JWT_EXPIRE`: `7d`
-   * `FRONTEND_URL`: `https://your-frontend.pages.dev` (ya aapka domain `https://yourdomain.com`)
+   * `FRONTEND_URL`: `https://homexa.pages.dev` (ya aapka domain)
    * `IMAGEKIT_PUBLIC_KEY`: `your_imagekit_public_key`
    * `IMAGEKIT_PRIVATE_KEY`: `your_imagekit_private_key`
-   * `IMAGEKIT_URL_ENDPOINT`: `https://ik.imagekit.io/your_id`
-   * `RAZORPAY_KEY_ID`: `rzp_live_...`
-   * `RAZORPAY_KEY_SECRET`: `your_razorpay_secret`
-   * `RAZORPAY_WEBHOOK_SECRET`: `your_webhook_secret`
-   * `SMTP_HOST`: `smtp.gmail.com`
+   * `IMAGEKIT_URL_ENDPOINT`: `https://ik.imagekit.io/...`
+   * `RAZORPAY_KEY_ID`: `your_razorpay_key_id`
+   * `RAZORPAY_KEY_SECRET`: `your_razorpay_key_secret`
+   * `SMTP_HOST`: `sandbox.smtp.mailtrap.io` (ya Gmail)
    * `SMTP_PORT`: `587`
-   * `SMTP_USER`: `your_email@gmail.com`
-   * `SMTP_PASS`: `your_app_password`
-   * `EMAIL_FROM`: `Homely Hub <your_email@gmail.com>`
-6. **Deploy**:
-   * Click **Create & Deploy**.
-   * 3-5 minute me aapka service **Running** ho jayega aur ek URL milega:
-     `https://xxxxxxxxxx.awsapprunner.com`
-7. **Test API**:
-   Browser me visit karein: `https://xxxxxxxxxx.awsapprunner.com/api/health`
+   * `SMTP_USER`: `your_user`
+   * `SMTP_PASS`: `your_pass`
+   * `EMAIL_FROM`: `Homely Hub <noreply@homelyhub.com>`
+7. **Deploy Web Service** par click karein.
+   * 2-3 minute me aapka backend live ho jayega aur ek URL milega:
+     `https://homely-backend.onrender.com`
+8. **Test API**:
+   Browser me `https://homely-backend.onrender.com/api` open karein:
    Expected response:
    ```json
-   {"success": true, "status": "healthy", "db": "connected"}
+   { "success": true, "message": "🏡 Homexa API is running!" }
    ```
 
 ---
 
-### Option B: AWS EC2 (Ubuntu Linux + PM2 + Nginx)
+## ⚡ STEP 3: Deploy Frontend on Cloudflare Pages
 
-Agar aap Free Tier EC2 instance use kar rahe hain:
-
-1. **EC2 Instance Launch karein**: Ubuntu 24.04 LTS (Security Group: Allow SSH 22, HTTP 80, HTTPS 443).
-2. **Server par login karke tools install karein**:
-   ```bash
-   sudo apt update && sudo apt upgrade -y
-   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-   sudo apt install -y nodejs git nginx
-   sudo npm install -g pm2
-   ```
-3. **Repository Clone aur Start**:
-   ```bash
-   git clone <YOUR_REPO_URL>
-   cd Homely_Hub/Backend
-   npm install --omit=dev
-   nano .env # (Env variables paste karein)
-   pm2 start server.js --name "homely-backend"
-   pm2 startup
-   pm2 save
-   ```
-4. **Nginx Reverse Proxy Setup (`/etc/nginx/sites-available/default`)**:
-   ```nginx
-   server {
-       listen 80;
-       server_name api.yourdomain.com; # ya EC2 Public IP
-
-       location / {
-           proxy_pass http://127.0.0.1:5000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
-   Save karein aur reload karein:
-   ```bash
-   sudo nginx -t
-   sudo systemctl restart nginx
-   ```
-
----
-
-## 2️⃣ STEP 2: Deploy Frontend on Cloudflare Pages
-
-1. **Cloudflare Dashboard** me login karein (`dash.cloudflare.com`).
-2. Left sidebar se **Workers & Pages** par click karein -> **Create Application** -> **Pages** -> **Connect to Git**.
-3. Apna GitHub repo `Homely_Hub` select karein.
-4. **Build settings set karein**:
+1. **Cloudflare Dashboard** (`dash.cloudflare.com`) me login karein.
+2. Left menu se **Workers & Pages** par click karein.
+3. **Create application** -> **Pages** tab -> **Connect to Git** select karein.
+4. Apna GitHub repository `Homely_Hub` select karein aur **Begin setup** par click karein.
+5. **Build settings configure karein**:
+   * **Project name**: `homexa` (ya apni pasand ka name)
+   * **Production branch**: `main`
    * **Framework preset**: `Vite`
-   * **Root directory**: `Frontend`
-   * **Build command**: `npm run build`
-   * **Build output directory**: `dist`
-5. **Environment Variables**:
-   * `VITE_API_URL`: `https://xxxxxxxxxx.awsapprunner.com/api` (Aapka AWS Backend URL jisme aage `/api` laga ho)
-6. **Save and Deploy**:
-   * Cloudflare aapka project build karega.
-   * `Frontend/public/_redirects` already setup hai, isliye page refresh ya deep links par koi 404 error nahi aayega.
-   * `Frontend/public/_headers` static assets ko CDN par fast cache karega.
+   * **Root directory**: `/` (ya `Frontend`)
+     * *Agar Root directory `/` rakhte hain*:
+       - **Build command**: `npm run build`
+       - **Build output directory**: `dist`
+     * *Agar Root directory `Frontend` rakhte hain*:
+       - **Build command**: `npm run build`
+       - **Build output directory**: `dist`
+6. **Environment Variables (Cloudflare Pages)**:
+   * `BACKEND_URL`: `https://homely-backend.onrender.com` (Aapka STEP 2 me mila hua backend URL)
+   * `VITE_API_URL`: `/api`
+7. **Save and Deploy** par click karein!
+   * Cloudflare automatically aapka project build karega.
+   * Edge CDN par globally deploy ho jayega aur aapko link milega:
+     `https://homexa.pages.dev`
 
 ---
 
-## 3️⃣ STEP 3: Domain & Cloudflare DNS Setup (Optional Custom Domain)
+## 🔗 Cloudflare Proxy Kaise Kaam Karta Hai?
 
-Agar aapke paas domain hai (jaise `example.com`):
-
-1. **Frontend connect karein**:
-   * Cloudflare Pages me project select karein -> **Custom domains** tab -> `example.com` aur `www.example.com` add karein. Cloudflare automatically DNS config karega.
-2. **Backend API connect karein (`api.example.com`)**:
-   * **App Runner ke liye**: App Runner me "Custom domains" me `api.example.com` add karein aur diya gaya CNAME Cloudflare DNS me add karein.
-   * **EC2 ke liye**: Cloudflare DNS me ek `A Record` banayein:
-     * **Name**: `api`
-     * **IPv4 address**: `YOUR_EC2_PUBLIC_IP`
-     * **Proxy status**: `Proxied (Orange cloud)`
-3. **Cloudflare SSL/TLS Settings**:
-   * Cloudflare Dashboard > **SSL/TLS** > Encryption Mode: **Full** ya **Full (Strict)** select karein.
-4. **Backend `.env` update karein**:
-   * `FRONTEND_URL` ko `https://example.com` par update karein aur backend restart/redeploy karein.
+Aapke repo me `functions/api/[[...catchall]].js` aur `worker.js` configured hai.
+* Jab user browser me `https://homexa.pages.dev/api/properties` call karega:
+* Cloudflare Pages Functions request ko catch karega aur safely aapke backend `https://homely-backend.onrender.com/api/properties` par forward kar dega.
+* **Benefits**:
+  1. No CORS error (kyunki same-origin `/api` par request hoti hai).
+  2. Backend URL visitors se hidden rehta hai.
+  3. Cloudflare DDoS protection aur global edge security milti hai.
 
 ---
 
-## 4️⃣ Testing & Verification Checklist
+## 🌍 STEP 4: Custom Domain Connect Karein (Optional)
 
-- [ ] `/api/health` status returns `healthy` and `db: connected`.
-- [ ] Frontend opens cleanly on the Cloudflare Pages URL.
-- [ ] User Register & Login work (JWT token saved in localStorage).
-- [ ] Refreshing on sub-pages (e.g. `/properties`) works without 404 (due to `_redirects`).
-- [ ] Property listing and Image upload work (ImageKit integration).
-- [ ] Razorpay checkout modal opens properly.
-- [ ] Razorpay Webhook configured at `https://<YOUR_BACKEND_URL>/api/payments/webhook`.
+Agar aapke paas apna domain hai (e.g. `yourdomain.com`):
 
+1. **Cloudflare Pages** me project open karein -> **Custom domains** tab par click karein.
+2. **Set up a custom domain** -> Apna domain type karein (`yourdomain.com` ya `app.yourdomain.com`).
+3. Cloudflare automatically DNS CNAME create kar dega.
+4. **SSL/TLS Encryption**:
+   * Cloudflare Dashboard > **SSL/TLS** > Set to **Full (Strict)**.
+5. Backend Render me jakar `FRONTEND_URL` environment variable ko update karke `https://yourdomain.com` kar dein.
+
+---
+
+## ✅ Deployment Checklist
+
+- [x] AWS App Runner file (`apprunner.yaml`) deleted from repository.
+- [x] Hardcoded AWS EC2 IP (`44.222.204.56`) completely removed.
+- [x] Cloudflare Worker (`worker.js`) & Cloudflare Pages Functions configured with dynamic `env.BACKEND_URL`.
+- [x] Static SPA routing configured in `_redirects` (`/* /index.html 200`).
+- [x] Static sitemap generation fixed without live API dependency during build.
+- [x] Frontend builds cleanly with `npm run build`.
+- [ ] AWS EC2 instance terminated via AWS Console.
+- [ ] Backend deployed on Render.com with MongoDB Atlas.
+- [ ] Cloudflare Pages connected with GitHub repository and `BACKEND_URL` env variable set.

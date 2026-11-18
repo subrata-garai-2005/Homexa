@@ -46,7 +46,7 @@ export const sendBookingConfirmation = async (booking, guest, property) => {
       table: {
         data: [
           { item: 'Property', description: property.title },
-          { item: 'Location', description: `${property.location.city}, ${property.location.state}` },
+          { item: 'Location', description: `${property.location?.city || ''}, ${property.location?.state || ''}` },
           { item: 'Check-in', description: checkIn },
           { item: 'Check-out', description: checkOut },
           { item: 'Guests', description: `${booking.totalGuests} guests` },
@@ -96,7 +96,7 @@ export const sendHostBookingNotification = async (booking, host, property, guest
         button: {
           color: '#22c55e',
           text: 'View Booking',
-          link: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/host/bookings`
+          link: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/host`
         }
       },
       outro: 'Please prepare for your guest\'s arrival!'
@@ -108,8 +108,14 @@ export const sendHostBookingNotification = async (booking, host, property, guest
 
   await sendEmail({
     to: host.email,
-    subject: `New Booking: ${property.title} for ${checkIn}`,
+    subject: `New Booking Request for ${property.title}`,
     html: emailBody,
     text: emailText
   });
+};
+
+export default {
+  sendWelcomeEmail,
+  sendBookingConfirmation,
+  sendHostBookingNotification
 };

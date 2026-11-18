@@ -2,8 +2,22 @@ export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
 
-  // Target AWS Backend
-  const backendBase = (env.BACKEND_URL || 'http://44.222.204.56:5000').replace(/\/+$/, '');
+  // Target Backend API
+  const backendBase = (env.BACKEND_URL || '').replace(/\/+$/, '');
+
+  if (!backendBase) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: 'BACKEND_URL environment variable is not configured in Cloudflare Pages.',
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      }
+    );
+  }
+
   const targetUrl = `${backendBase}${url.pathname}${url.search}`;
 
   // Handle CORS Preflight
@@ -19,9 +33,14 @@ export async function onRequest(context) {
     });
   }
 
-  // Forward headers to AWS backend
+  // Forward headers to backend
   const forwardHeaders = new Headers(request.headers);
   forwardHeaders.delete('host');
+  // Forward real client IP to prevent shared rate-limiting DoS
+  const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '';
+  if (clientIp) {
+    forwardHeaders.set('X-Forwarded-For', clientIp);
+  }
   forwardHeaders.delete('cf-connecting-ip');
   forwardHeaders.delete('cf-ray');
   forwardHeaders.delete('cf-visitor');
@@ -54,7 +73,7 @@ export async function onRequest(context) {
     return new Response(
       JSON.stringify({
         success: false,
-        message: 'Cloudflare Proxy could not reach AWS EC2 Backend http://44.222.204.56:5000',
+        message: 'Cloudflare Proxy could not reach Backend',
         error: err.message,
         target: targetUrl,
       }),

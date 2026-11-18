@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Property from '../models/Property.js';
 import { sendBookingConfirmation, sendHostBookingNotification } from '../utils/mailTemplates.js';

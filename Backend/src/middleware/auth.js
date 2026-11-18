@@ -53,12 +53,15 @@ export const optionalAuth = async (req, res, next) => {
   }
 };
 
+// BUG FIX: authorizeHost was calling next() for everyone — allowing non-hosts to create/edit properties
 export const authorizeHost = (req, res, next) => {
   if (req.user && (req.user.isHost || req.user.role === 'host' || req.user.role === 'admin')) {
     return next();
   }
-  // Auto-upgrade to host if trying to create property
-  return next();
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. You must be a host to perform this action. Please become a host first.'
+  });
 };
 
 export const generateToken = (id) => {

@@ -291,6 +291,11 @@ const PropertyDetails = () => {
             }
           }
         };
+        if (!window.Razorpay) {
+          toast.error('Payment gateway could not be loaded. Please check your internet connection.');
+          setBookingLoading(false);
+          return;
+        }
         const rzp = new window.Razorpay(options);
 
         // Handle payment failure without immediately nuking booking so user can retry in modal
@@ -518,17 +523,7 @@ const PropertyDetails = () => {
                   </div>
                 )}
 
-                {isHostOfProperty && !isDev && user?.role !== 'admin' ? (
-                  <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-300 text-sm flex items-start gap-3">
-                    <FiAlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">You are the host of this property</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        Hosts cannot write reviews for their own listings. Only guests who have booked and completed stays can leave reviews.
-                      </p>
-                    </div>
-                  </div>
-                ) : isAuthenticated ? (
+                {isAuthenticated ? (
                   <form onSubmit={handleReviewSubmit} className="space-y-4">
                     {isHostOfProperty && (
                       <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">

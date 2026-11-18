@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Property from '../models/Property.js';
 import Booking from '../models/Booking.js';
 import { uploadToImageKit } from '../config/imagekit.js';
@@ -356,29 +357,7 @@ export const createPropertyReview = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    const hostId = property.host?._id ? property.host._id.toString() : property.host.toString();
-    const isHost = hostId === req.user._id.toString();
-    const isDev = process.env.NODE_ENV !== 'production' || process.env.ALLOW_DEV_REVIEWS === 'true';
-
-    // Hosts cannot review their own property (allowed in dev/admin for testing)
-    if (isHost && !isDev && req.user.role !== 'admin') {
-      return res.status(400).json({ success: false, message: 'Hosts cannot review their own property' });
-    }
-
-    // Check verified stay: guest must have booked and commenced stay (allowed in dev/admin for testing)
-    const verifiedStay = await Booking.findOne({
-      property: property._id,
-      guest: req.user._id,
-      status: { $in: ['confirmed', 'completed'] },
-      checkIn: { $lte: new Date() }
-    });
-
-    if (!verifiedStay && req.user.role !== 'admin' && !isDev) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only leave a review for stays that you have booked and completed'
-      });
-    }
+    // All logged-in users can leave reviews
 
     // Check if user already reviewed
     const existingIndex = property.reviews.findIndex(

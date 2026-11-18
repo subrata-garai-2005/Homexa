@@ -5,8 +5,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BASE_URL = process.env.VITE_SITE_URL || 'https://somexa.netlify.app';
-const API_URL = process.env.VITE_API_BASE_URL || 'http://44.222.204.56:5000/api';
+const BASE_URL = process.env.VITE_SITE_URL || 'https://homexa.pages.dev';
+const API_URL = process.env.VITE_API_BASE_URL || process.env.VITE_API_URL || '';
 const today = new Date().toISOString().split('T')[0];
 
 const staticRoutes = [
@@ -16,10 +16,14 @@ const staticRoutes = [
 ];
 
 async function fetchProperties() {
+  if (!API_URL.startsWith('http://') && !API_URL.startsWith('https://')) {
+    return null;
+  }
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch(`${API_URL}/properties`, { signal: controller.signal });
+    const target = API_URL.endsWith('/') ? `${API_URL}properties` : `${API_URL}/properties`;
+    const res = await fetch(target, { signal: controller.signal });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();

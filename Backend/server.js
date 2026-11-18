@@ -54,9 +54,22 @@ app.use((req, res, next) => {
 // Connect DB
 connectDB();
 
-// Middleware - Allow dynamic origin for seamless fullstack deployment on any domain/IP
+// Middleware - Restricted CORS policy to protect authenticated user sessions
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000'
+].filter(Boolean);
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost(:\d+)?$/.test(origin))) {
+      return callback(null, true);
+    }
+    return callback(new Error('Blocked by CORS policy'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']

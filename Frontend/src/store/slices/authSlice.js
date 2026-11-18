@@ -44,6 +44,16 @@ export const updateProfile = createAsyncThunk('auth/updateProfile', async (data,
   }
 });
 
+export const becomeHost = createAsyncThunk('auth/becomeHost', async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/auth/become-host');
+    localStorage.setItem('homely_user', JSON.stringify(res.data.user));
+    return res.data.user;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Failed to become host');
+  }
+});
+
 export const toggleWishlist = createAsyncThunk('auth/toggleWishlist', async (propertyId, { rejectWithValue }) => {
   try {
     const res = await api.post(`/auth/wishlist/${propertyId}`);
@@ -111,6 +121,10 @@ const authSlice = createSlice({
         localStorage.setItem('homely_user', JSON.stringify(action.payload));
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
+        localStorage.setItem('homely_user', JSON.stringify(action.payload));
+      })
+      .addCase(becomeHost.fulfilled, (state, action) => {
         state.user = action.payload;
         localStorage.setItem('homely_user', JSON.stringify(action.payload));
       })

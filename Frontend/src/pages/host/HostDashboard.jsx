@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchHostProperties, deleteProperty } from '../../store/slices/propertySlice';
 import { fetchHostBookings } from '../../store/slices/bookingSlice';
+import { toast } from '../../utils/toast';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiDollarSign, FiCalendar, FiHome } from 'react-icons/fi';
 
 const HostDashboard = () => {
@@ -16,9 +17,15 @@ const HostDashboard = () => {
     dispatch(fetchHostBookings());
   }, [dispatch]);
 
+  // BUG FIX: delete result was not handled — no feedback to user on success/failure
   const handleDelete = async (id) => {
-    if (!confirm('Delete this property?')) return;
-    dispatch(deleteProperty(id));
+    if (!confirm('Delete this property? This action cannot be undone.')) return;
+    const result = await dispatch(deleteProperty(id));
+    if (deleteProperty.fulfilled.match(result)) {
+      toast.success('Property deleted successfully');
+    } else if (deleteProperty.rejected.match(result)) {
+      toast.error(result.payload || 'Failed to delete property');
+    }
   };
 
   const totalEarnings = hostBookings.filter(b => b.status === 'confirmed' || b.status === 'completed').reduce((sum, b) => sum + (b.pricing?.totalAmount || 0), 0);

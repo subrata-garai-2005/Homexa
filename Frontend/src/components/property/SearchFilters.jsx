@@ -1,17 +1,17 @@
-import { useState } from 'react';
-import { FiSearch, FiSliders, FiX, FiMapPin } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiSearch, FiSliders, FiX, FiMapPin, FiHome, FiGrid, FiLayers, FiSun, FiCompass, FiAnchor, FiAward, FiFeather } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setFilters, clearFilters } from '../../store/slices/propertySlice';
 
 const propertyTypes = [
-  { value: 'all', label: 'All', icon: '🏠' },
-  { value: 'apartment', label: 'Apartments', icon: '🏢' },
-  { value: 'house', label: 'Houses', icon: '🏡' },
-  { value: 'villa', label: 'Villas', icon: '🏖️' },
-  { value: 'cabin', label: 'Cabins', icon: '🌲' },
-  { value: 'beachfront', label: 'Beachfront', icon: '🌊' },
-  { value: 'luxury', label: 'Luxury', icon: '✨' },
-  { value: 'unique', label: 'Unique', icon: '🏰' },
+  { value: 'all', label: 'All', icon: FiHome },
+  { value: 'apartment', label: 'Apartments', icon: FiGrid },
+  { value: 'house', label: 'Houses', icon: FiLayers },
+  { value: 'villa', label: 'Villas', icon: FiSun },
+  { value: 'cabin', label: 'Cabins', icon: FiCompass },
+  { value: 'beachfront', label: 'Beachfront', icon: FiAnchor },
+  { value: 'luxury', label: 'Luxury', icon: FiAward },
+  { value: 'unique', label: 'Unique', icon: FiFeather },
 ];
 
 const amenitiesList = ['wifi', 'kitchen', 'pool', 'ac', 'parking', 'gym', 'pets', 'workspace'];
@@ -20,7 +20,12 @@ const SearchFilters = ({ onSearch }) => {
   const dispatch = useDispatch();
   const filters = useSelector(s => s.properties.filters);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [localSearch, setLocalSearch] = useState(filters.search);
+  const [localSearch, setLocalSearch] = useState(filters.search || '');
+
+  // BUG FIX: Keep local search input in sync when filters change from outside (URL or Clear All)
+  useEffect(() => {
+    setLocalSearch(filters.search || '');
+  }, [filters.search]);
 
   const handleSearch = () => {
     dispatch(setFilters({ search: localSearch }));
@@ -71,7 +76,7 @@ const SearchFilters = ({ onSearch }) => {
               <input
                 type="text"
                 placeholder="City"
-                value={filters.city}
+                value={filters.city || ''}
                 onChange={e => dispatch(setFilters({ city: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 className="w-full sm:w-32 pl-9 pr-3 py-2 sm:py-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl sm:rounded-full text-sm outline-none focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-primary-500/20 border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
@@ -107,13 +112,14 @@ const SearchFilters = ({ onSearch }) => {
           <button
             key={type.value}
             onClick={() => handleTypeChange(type.value)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all border cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors border cursor-pointer ${
               filters.propertyType === type.value
-                ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white shadow-soft'
-                : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+                ? 'bg-stone-900 text-white border-stone-900 dark:bg-white dark:text-stone-900 dark:border-white shadow-sm'
+                : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
             }`}
           >
-            <span>{type.icon}</span> {type.label}
+            <type.icon className="w-3.5 h-3.5 shrink-0 text-current" />
+            <span>{type.label}</span>
           </button>
         ))}
       </div>
@@ -124,8 +130,21 @@ const SearchFilters = ({ onSearch }) => {
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
             <div className="flex gap-2">
-              <button onClick={() => { dispatch(clearFilters()); setLocalSearch(''); }} className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline cursor-pointer">Clear all</button>
-              <button onClick={() => setShowAdvanced(false)} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full cursor-pointer"><FiX /></button>
+              <button
+                onClick={() => {
+                  dispatch(clearFilters());
+                  setLocalSearch('');
+                }}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline cursor-pointer"
+              >
+                Clear all
+              </button>
+              <button
+                onClick={() => setShowAdvanced(false)}
+                className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full cursor-pointer"
+              >
+                <FiX />
+              </button>
             </div>
           </div>
 
@@ -133,13 +152,13 @@ const SearchFilters = ({ onSearch }) => {
             <div>
               <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-300">Price range (per night)</label>
               <div className="flex gap-2">
-                <input type="number" placeholder="Min ₹" value={filters.minPrice} onChange={e => dispatch(setFilters({ minPrice: e.target.value }))} className="input-field !py-2.5 text-sm" />
-                <input type="number" placeholder="Max ₹" value={filters.maxPrice} onChange={e => dispatch(setFilters({ maxPrice: e.target.value }))} className="input-field !py-2.5 text-sm" />
+                <input type="number" placeholder="Min ₹" value={filters.minPrice || ''} onChange={e => dispatch(setFilters({ minPrice: e.target.value }))} className="input-field !py-2.5 text-sm" />
+                <input type="number" placeholder="Max ₹" value={filters.maxPrice || ''} onChange={e => dispatch(setFilters({ maxPrice: e.target.value }))} className="input-field !py-2.5 text-sm" />
               </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-300">Bedrooms</label>
-              <select value={filters.bedrooms} onChange={e => dispatch(setFilters({ bedrooms: e.target.value }))} className="input-field !py-2.5 text-sm">
+              <select value={filters.bedrooms || ''} onChange={e => dispatch(setFilters({ bedrooms: e.target.value }))} className="input-field !py-2.5 text-sm">
                 <option value="">Any</option>
                 <option value="1">1+</option>
                 <option value="2">2+</option>
@@ -149,7 +168,7 @@ const SearchFilters = ({ onSearch }) => {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-300">Sort by</label>
-              <select value={filters.sort} onChange={e => dispatch(setFilters({ sort: e.target.value }))} className="input-field !py-2.5 text-sm">
+              <select value={filters.sort || 'newest'} onChange={e => dispatch(setFilters({ sort: e.target.value }))} className="input-field !py-2.5 text-sm">
                 <option value="newest">Newest</option>
                 <option value="price_low">Price: Low to High</option>
                 <option value="price_high">Price: High to Low</option>
