@@ -2,9 +2,10 @@
   "name": "homexa-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
+    "build": "echo 'Backend build not required'",
     "start": "node server.js"
   },
   "keywords": [],
