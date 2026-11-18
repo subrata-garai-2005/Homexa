@@ -18,4 +18,8 @@ if (fs.existsSync('dist')) {
 }
 fs.cpSync('Frontend/dist', 'dist', { recursive: true });
 
+// Copy _worker.js into dist so Cloudflare Pages uses Worker routing instead of Pages Functions
+console.log('⚙️  Copying _worker.js into dist for Cloudflare Pages Worker routing...');
+fs.copyFileSync('worker.js', 'dist/_worker.js');
+
 console.log('✅ Build completed successfully for Cloudflare Pages / Workers!');
