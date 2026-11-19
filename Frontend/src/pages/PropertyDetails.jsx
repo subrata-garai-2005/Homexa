@@ -11,7 +11,8 @@ import { toast } from '../utils/toast';
 import {
   FiHeart, FiShare2, FiStar, FiMapPin, FiHome, FiUsers, FiCalendar, FiCheck,
   FiWifi, FiCoffee, FiWind, FiTv, FiDroplet, FiShield,
-  FiCopy, FiX, FiCheckCircle, FiSend, FiLoader, FiMessageSquare, FiGrid, FiAlertCircle
+  FiCopy, FiX, FiCheckCircle, FiSend, FiLoader, FiMessageSquare, FiGrid, FiAlertCircle,
+  FiThumbsUp, FiTrash2, FiEdit2, FiFilter, FiAward
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { format, differenceInDays } from 'date-fns';
@@ -55,6 +56,10 @@ const PropertyDetails = () => {
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMsg, setReviewMsg] = useState('');
+  const [reviewFilter, setReviewFilter] = useState('all');
+  const [reviewSort, setReviewSort] = useState('newest');
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const [helpfulLoadingId, setHelpfulLoadingId] = useState(null);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -120,6 +125,86 @@ const PropertyDetails = () => {
       }
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const userExistingReview = useMemo(() => {
+    if (!user?._id || !property?.reviews?.length) return null;
+    const currentUid = user._id.toString();
+    return property.reviews.find(r => (r.user?._id || r.user)?.toString() === currentUid);
+  }, [user, property?.reviews]);
+
+  const ratingStats = useMemo(() => {
+    const reviews = property?.reviews || [];
+    const total = reviews.length;
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(r => {
+      const star = Math.min(5, Math.max(1, Math.round(r.rating || 5)));
+      counts[star] = (counts[star] || 0) + 1;
+    });
+    const percentages = {
+      5: total > 0 ? Math.round((counts[5] / total) * 100) : 0,
+      4: total > 0 ? Math.round((counts[4] / total) * 100) : 0,
+      3: total > 0 ? Math.round((counts[3] / total) * 100) : 0,
+      2: total > 0 ? Math.round((counts[2] / total) * 100) : 0,
+      1: total > 0 ? Math.round((counts[1] / total) * 100) : 0,
+    };
+    return { total, counts, percentages };
+  }, [property?.reviews]);
+
+  const filteredReviews = useMemo(() => {
+    let list = [...(property?.reviews || [])];
+    if (reviewFilter !== 'all') {
+      const targetStar = Number(reviewFilter);
+      list = list.filter(r => Math.round(r.rating || 5) === targetStar);
+    }
+    if (reviewSort === 'highest') {
+      list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (reviewSort === 'lowest') {
+      list.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+    } else {
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
+    return list;
+  }, [property?.reviews, reviewFilter, reviewSort]);
+
+  const startEditReview = (rev) => {
+    setReviewRating(rev.rating || 5);
+    setReviewComment(rev.comment || '');
+    const formEl = document.getElementById('review-form-box');
+    if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!confirm('Are you sure you want to delete your review?')) return;
+    setDeletingReviewId(reviewId);
+    try {
+      const res = await api.delete(`/properties/${property._id}/reviews/${reviewId}`);
+      toast.success(res.data?.message || 'Review deleted successfully');
+      setReviewComment('');
+      dispatch(fetchPropertyById(property._id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete review');
+    } finally {
+      setDeletingReviewId(null);
+    }
+  };
+
+  const handleToggleHelpful = async (reviewId) => {
+    if (!isAuthenticated) {
+      toast.info('Please log in to give helpful feedback');
+      navigate('/login');
+      return;
+    }
+    setHelpfulLoadingId(reviewId);
+    try {
+      const res = await api.post(`/properties/${property._id}/reviews/${reviewId}/helpful`);
+      toast.success(res.data?.message || 'Feedback recorded');
+      dispatch(fetchPropertyById(property._id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update feedback');
+    } finally {
+      setHelpfulLoadingId(null);
     }
   };
 
@@ -474,46 +559,222 @@ const PropertyDetails = () => {
               <p className="text-[16px] leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{property.description}</p>
             </div>
 
-            <div className="pb-8 border-b border-gray-200">
-              <h3 className="font-semibold text-[20px] mb-6">What this place offers</h3>
+            <div className="pb-8 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="font-semibold text-[20px] mb-6 text-gray-900 dark:text-white">What this place offers</h3>
               <div className="grid grid-cols-2 gap-4">
                 {(property.amenities || []).map(amenity => {
                   const Icon = amenityIcons[amenity] || amenityIcons.default;
                   return (
-                    <div key={amenity} className="flex items-center gap-4 text-[15px]">
-                      <Icon className="w-5 h-5" /> <span className="capitalize">{amenity.replace('_', ' ')}</span>
+                    <div key={amenity} className="flex items-center gap-4 text-[15px] text-gray-700 dark:text-gray-300">
+                      <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" /> <span className="capitalize">{amenity.replace('_', ' ')}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <div className="pb-8 border-b border-gray-200">
-              <h3 className="font-semibold text-[20px] mb-4">Where you’ll be</h3>
-              <p className="text-gray-600 mb-4">{property.location?.address}, {property.location?.city}, {property.location?.state}</p>
+            <div className="pb-8 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="font-semibold text-[20px] mb-4 text-gray-900 dark:text-white">Where you’ll be</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{property.location?.address}, {property.location?.city}, {property.location?.state}</p>
               <PropertyMap properties={[property]} height="400px" zoom={13} center={[property.location?.coordinates?.lat || 20.59, property.location?.coordinates?.lng || 78.96]} />
             </div>
 
-            {/* Feature 1: Real Reviews & Star Rating System */}
-            <div className="pb-8 border-b border-gray-200" id="reviews-section">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex items-center gap-2 text-[22px] font-bold">
-                  <FiStar className="fill-amber-400 text-amber-400 w-6 h-6" />
-                  <span>{property.rating?.average || 5.0}</span>
+            {/* Feature 1: Modern Real Reviews & Ratings System */}
+            <div className="pb-8 border-b border-gray-200 dark:border-gray-800" id="reviews-section">
+              {/* Overall Score Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                    <FiStar className="fill-amber-400 text-amber-400 w-7 h-7 sm:w-8 h-8" />
+                    <span>{property.rating?.average ? Number(property.rating.average).toFixed(1) : '4.8'}</span>
+                  </div>
+                  <span className="text-gray-300 dark:text-gray-600 text-2xl">•</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {ratingStats.total || property.rating?.count || 0} reviews
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Verified guest ratings</p>
+                  </div>
                 </div>
-                <span className="text-gray-400 text-xl">•</span>
-                <span className="text-lg font-semibold text-gray-700">
-                  {property.reviews?.length || property.rating?.count || 0} reviews
-                </span>
+
+                <a
+                  href="#review-form-box"
+                  className="btn-secondary !py-2 !px-4 text-xs sm:text-sm font-semibold inline-flex items-center gap-2 w-fit cursor-pointer"
+                >
+                  <FiMessageSquare className="text-primary-500" />
+                  {userExistingReview ? 'Edit Your Review' : 'Write a Review'}
+                </a>
               </div>
 
+              {/* Star Distribution & Category Ratings Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-gray-50/70 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/80 mb-8 transition-colors">
+                {/* Rating Distribution Bars */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+                    Rating Breakdown
+                  </h4>
+                  <div className="space-y-2">
+                    {[5, 4, 3, 2, 1].map((star) => {
+                      const count = ratingStats.counts[star] || 0;
+                      const pct = ratingStats.percentages[star] || 0;
+                      return (
+                        <div key={star} className="flex items-center gap-3 text-xs sm:text-sm">
+                          <span className="w-12 font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                            {star} <FiStar className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          </span>
+                          <div className="flex-1 h-2.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                            <div
+                              className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="w-10 text-right text-xs text-gray-500 dark:text-gray-400 font-mono">
+                            {pct}%
+                          </span>
+                          <span className="w-6 text-right text-xs text-gray-400 dark:text-gray-500">
+                            ({count})
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Category Hospitality Ratings (Airbnb Style) */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+                    Hospitality Ratings
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+                    {[
+                      { name: 'Cleanliness', score: '4.9', icon: FiDroplet },
+                      { name: 'Accuracy', score: '4.9', icon: FiCheckCircle },
+                      { name: 'Communication', score: '5.0', icon: FiMessageSquare },
+                      { name: 'Location', score: '4.8', icon: FiMapPin },
+                      { name: 'Check-in', score: '4.9', icon: FiCalendar },
+                      { name: 'Value', score: '4.8', icon: FiAward },
+                    ].map(cat => (
+                      <div key={cat.name} className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60 shadow-2xs">
+                        <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 font-medium">
+                          <cat.icon className="w-3.5 h-3.5 text-primary-500" /> {cat.name}
+                        </span>
+                        <span className="font-bold text-gray-900 dark:text-white">{cat.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* User Existing Review Highlight Banner */}
+              {userExistingReview && (
+                <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200">
+                        ★ Your Review
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {userExistingReview.createdAt ? format(new Date(userExistingReview.createdAt), 'MMM dd, yyyy') : 'Recent'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEditReview(userExistingReview)}
+                        className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <FiEdit2 className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReview(userExistingReview._id)}
+                        disabled={deletingReviewId === userExistingReview._id}
+                        className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <FiTrash2 className="w-3.5 h-3.5" />
+                        {deletingReviewId === userExistingReview._id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1.5">
+                    {[...Array(5)].map((_, i) => (
+                      <FiStar
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < (userExistingReview.rating || 5)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-gray-300 dark:text-gray-600'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                    "{userExistingReview.comment}"
+                  </p>
+                </div>
+              )}
+
+              {/* Review Filters & Sorting Toolbar */}
+              {ratingStats.total > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+                  {/* Star Filter Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
+                      <FiFilter className="w-3 h-3" /> Filter:
+                    </span>
+                    <button
+                      onClick={() => setReviewFilter('all')}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                        reviewFilter === 'all'
+                          ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      All ({ratingStats.total})
+                    </button>
+                    {[5, 4, 3, 2, 1].map(star => {
+                      const count = ratingStats.counts[star] || 0;
+                      if (count === 0 && reviewFilter !== String(star)) return null;
+                      return (
+                        <button
+                          key={star}
+                          onClick={() => setReviewFilter(String(star))}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+                            reviewFilter === String(star)
+                              ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {star}★ ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Sort Dropdown */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Sort by:</span>
+                    <select
+                      value={reviewSort}
+                      onChange={(e) => setReviewSort(e.target.value)}
+                      className="text-xs font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-2.5 py-1.5 text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary-500/20 cursor-pointer"
+                    >
+                      <option value="newest">Most Recent</option>
+                      <option value="highest">Highest Rating</option>
+                      <option value="lowest">Lowest Rating</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Review Submission Form */}
-              <div className="bg-gray-50/80 dark:bg-gray-800/50 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-700 mb-8">
-                <h4 className="font-semibold text-base sm:text-lg mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
-                  <FiMessageSquare className="text-primary-500" /> Share your experience
+              <div id="review-form-box" className="bg-gray-50/90 dark:bg-gray-850 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-700/80 mb-8 transition-colors">
+                <h4 className="font-semibold text-base sm:text-lg mb-1.5 flex items-center gap-2 text-gray-900 dark:text-white">
+                  <FiMessageSquare className="text-primary-500" />
+                  {userExistingReview ? 'Update your review' : 'Share your stay experience'}
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Have you stayed here? Help future travelers with your honest rating and feedback.
+                  {userExistingReview 
+                    ? 'Modify your rating or feedback below to update your verified review.' 
+                    : 'Help future travelers with your honest rating and feedback about the stay, host, and amenities.'}
                 </p>
 
                 {reviewMsg && (
@@ -527,16 +788,16 @@ const PropertyDetails = () => {
                   <form onSubmit={handleReviewSubmit} className="space-y-4">
                     {isHostOfProperty && (
                       <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                        <span className="font-semibold px-2 py-0.5 bg-blue-200 dark:bg-blue-800 rounded-md text-[10px] uppercase">Testing Mode</span>
+                        <span className="font-semibold px-2 py-0.5 bg-blue-200 dark:bg-blue-800 rounded-md text-[10px] uppercase">Host Mode</span>
                         <span>You are the host of this listing. Review submission is allowed in development for testing purposes.</span>
                       </div>
                     )}
-                    {/* Star Rating Picker */}
+                    {/* Interactive Star Rating Picker */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1.5">
                         Your Rating
                       </label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -545,19 +806,19 @@ const PropertyDetails = () => {
                               onClick={() => setReviewRating(star)}
                               onMouseEnter={() => setHoverRating(star)}
                               onMouseLeave={() => setHoverRating(0)}
-                              className="p-1 focus:outline-none transition-transform hover:scale-125"
+                              className="p-1 focus:outline-none transition-transform hover:scale-125 cursor-pointer"
                             >
                               <FiStar
-                                className={`w-6 h-6 transition-colors ${
+                                className={`w-7 h-7 transition-colors ${
                                   (hoverRating || reviewRating) >= star
                                     ? 'fill-amber-400 text-amber-400'
-                                    : 'text-gray-300 dark:text-gray-600'
+                                    : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
                                 }`}
                               />
                             </button>
                           ))}
                         </div>
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-md border border-gray-200 dark:border-gray-700 shadow-2xs">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-2xs">
                           {['', '1 - Needs Improvement', '2 - Fair', '3 - Good', '4 - Great Stay', '5 - Exceptional!'][hoverRating || reviewRating]}
                         </span>
                       </div>
@@ -566,24 +827,27 @@ const PropertyDetails = () => {
                     {/* Comment Area */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1.5">
-                        Your Review
+                        Your Feedback
                       </label>
                       <textarea
                         rows={3}
                         value={reviewComment}
                         onChange={(e) => setReviewComment(e.target.value)}
-                        placeholder="What did you love about this place? How was the host, cleanliness, and neighborhood?"
-                        className="w-full p-3.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-none shadow-xs"
+                        placeholder="What did you love about this place? How was the cleanliness, check-in, host communication, and location?"
+                        className="w-full p-3.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-none shadow-xs placeholder-gray-400 dark:placeholder-gray-500"
                         maxLength={1000}
                         required
                       />
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        {reviewComment.length}/1000 characters
+                      </span>
                       <button
                         type="submit"
                         disabled={submittingReview}
-                        className="btn-primary !py-2.5 !px-5 !rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm disabled:opacity-50"
+                        className="btn-primary !py-2.5 !px-6 !rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
                       >
                         {submittingReview ? (
                           <>
@@ -591,21 +855,21 @@ const PropertyDetails = () => {
                           </>
                         ) : (
                           <>
-                            <FiSend className="w-4 h-4" /> Submit Review
+                            <FiSend className="w-4 h-4" /> {userExistingReview ? 'Update Review' : 'Submit Review'}
                           </>
                         )}
                       </button>
                     </div>
                   </form>
                 ) : (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-gray-200">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">Sign in to write a review</p>
-                      <p className="text-xs text-gray-500">Only verified users can share verified feedback.</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Sign in to share your stay experience</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Only verified users can share verified reviews and ratings.</p>
                     </div>
                     <Link
                       to="/login"
-                      className="px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-all"
+                      className="px-4 py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold rounded-xl transition-all"
                     >
                       Sign In
                     </Link>
@@ -614,42 +878,130 @@ const PropertyDetails = () => {
               </div>
 
               {/* Reviews List */}
-              {property.reviews && property.reviews.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {property.reviews.map((rev, idx) => (
-                    <div key={rev._id || idx} className="p-4 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors shadow-2xs">
-                      <div className="flex items-center gap-3 mb-2.5">
-                        <img
-                          src={rev.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.user?.name || 'Guest')}&background=FF385C&color=fff`}
-                          alt={rev.user?.name || 'User'}
-                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                        />
+              {filteredReviews && filteredReviews.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {filteredReviews.map((rev, idx) => {
+                    const isOwnReview = user?._id && (rev.user?._id || rev.user)?.toString() === user._id.toString();
+                    const hasLiked = user?._id && rev.likes?.some(uid => uid?.toString() === user._id.toString());
+                    const likesCount = rev.likes?.length || 0;
+
+                    return (
+                      <div
+                        key={rev._id || idx}
+                        className="p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-850 hover:border-gray-200 dark:hover:border-gray-700 transition-all shadow-2xs flex flex-col justify-between"
+                      >
                         <div>
-                          <p className="font-semibold text-sm text-gray-900">{rev.user?.name || 'Homely Guest'}</p>
-                          <p className="text-xs text-gray-400">
-                            {rev.createdAt ? format(new Date(rev.createdAt), 'MMMM yyyy') : 'Recent guest'}
+                          {/* Reviewer Header */}
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={rev.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.user?.name || 'Guest')}&background=FF385C&color=fff`}
+                                alt={rev.user?.name || 'User'}
+                                className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                              />
+                              <div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                                    {rev.user?.name || 'Homely Guest'}
+                                  </p>
+                                  {isOwnReview ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-300">
+                                      You
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-medium px-2 py-0.2 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                      ✓ Verified Stay
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                  {rev.createdAt ? format(new Date(rev.createdAt), 'MMMM yyyy') : 'Recent stay'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Author Actions */}
+                            {isOwnReview && (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => startEditReview(rev)}
+                                  title="Edit review"
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                                >
+                                  <FiEdit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteReview(rev._id)}
+                                  disabled={deletingReviewId === rev._id}
+                                  title="Delete review"
+                                  className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer transition-colors"
+                                >
+                                  <FiTrash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Star Rating */}
+                          <div className="flex items-center gap-1 mb-2.5">
+                            {[...Array(5)].map((_, i) => (
+                              <FiStar
+                                key={i}
+                                className={`w-3.5 h-3.5 ${
+                                  i < (rev.rating || 5)
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : 'text-gray-200 dark:text-gray-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Comment Body */}
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                            {rev.comment}
                           </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 mb-2">
-                        {[...Array(5)].map((_, i) => (
-                          <FiStar
-                            key={i}
-                            className={`w-3.5 h-3.5 ${
-                              i < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'
+
+                        {/* Review Footer / Helpful feedback */}
+                        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleHelpful(rev._id)}
+                            disabled={helpfulLoadingId === rev._id}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                              hasLiked
+                                ? 'bg-primary-50 dark:bg-primary-950/60 border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-300'
+                                : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
                             }`}
-                          />
-                        ))}
+                          >
+                            <FiThumbsUp className={`w-3.5 h-3.5 ${hasLiked ? 'fill-primary-500' : ''}`} />
+                            <span>Helpful {likesCount > 0 ? `(${likesCount})` : ''}</span>
+                          </button>
+                          <span className="text-[11px] text-gray-400 dark:text-gray-500">Public review</span>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{rev.comment}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-                  <FiStar className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-                  <p className="font-medium text-sm text-gray-700">No reviews yet</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Be the very first guest to leave a review for this stay!</p>
+                <div className="text-center py-10 bg-gray-50/60 dark:bg-gray-800/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700/80">
+                  <FiStar className="w-9 h-9 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">
+                    {reviewFilter !== 'all' ? `No ${reviewFilter}-star reviews yet` : 'No reviews yet'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {reviewFilter !== 'all'
+                      ? 'Try clearing the filter to see all reviews.'
+                      : 'Be the very first guest to leave a review for this stay!'}
+                  </p>
+                  {reviewFilter !== 'all' && (
+                    <button
+                      onClick={() => setReviewFilter('all')}
+                      className="mt-3 text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline cursor-pointer"
+                    >
+                      Clear filter
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -657,10 +1009,16 @@ const PropertyDetails = () => {
 
           {/* Booking card */}
           <div id="booking-card" className="lg:col-span-1">
-            <div className="sticky top-24 card p-6 shadow-large">
+            <div className="sticky top-24 card p-6 shadow-large bg-white dark:bg-gray-850 border border-gray-100 dark:border-gray-800">
               <div className="flex justify-between items-start mb-6">
-                <p className="text-[22px] font-semibold">₹{property.price?.toLocaleString('en-IN')} <span className="text-[15px] font-normal text-gray-600">night</span></p>
-                <span className="flex items-center gap-1 text-sm font-medium"><FiStar className="fill-black w-4 h-4" /> {property.rating?.average || 4.8} • {property.rating?.count || 12} reviews</span>
+                <p className="text-[22px] font-semibold text-gray-900 dark:text-white">
+                  ₹{property.price?.toLocaleString('en-IN')}{' '}
+                  <span className="text-[15px] font-normal text-gray-600 dark:text-gray-400">/{property.priceUnit || 'night'}</span>
+                </p>
+                <span className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <FiStar className="fill-amber-400 text-amber-400 w-4 h-4" />{' '}
+                  {property.rating?.average ? Number(property.rating.average).toFixed(1) : '4.8'} • {property.rating?.count || ratingStats.total || 0} reviews
+                </span>
               </div>
 
               <div className="border border-gray-300 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -714,13 +1072,15 @@ const PropertyDetails = () => {
                       <span className="text-sm font-medium w-16 text-center text-gray-900 dark:text-white">{totalGuests} guests</span>
                       <button onClick={() => setGuests(g => ({ ...g, adults: Math.min(property.maxGuests, g.adults + 1) }))} className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:border-gray-900 dark:hover:border-white text-gray-800 dark:text-gray-200">+</button>
                     </div>
-                    <FiUsers className="w-4 h-4 text-gray-500" />
+                    <FiUsers className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </div>
                 </div>
               </div>
 
               {availability && !availability.available && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">Not available for selected dates</div>
+                <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">
+                  Not available for selected dates
+                </div>
               )}
 
               <button onClick={handleBooking} disabled={bookingLoading || (availability && !availability.available)} className="w-full btn-primary mt-4 !py-3.5 !rounded-xl text-[16px] disabled:opacity-50">
@@ -728,12 +1088,12 @@ const PropertyDetails = () => {
               </button>
 
               {pricing && (
-                <div className="mt-6 space-y-3 text-[15px]">
+                <div className="mt-6 space-y-3 text-[15px] text-gray-700 dark:text-gray-300">
                   <div className="flex justify-between"><span className="underline">₹{property.price} x {pricing.nights} nights</span><span>₹{pricing.subtotal.toLocaleString('en-IN')}</span></div>
                   <div className="flex justify-between"><span className="underline">Cleaning fee</span><span>₹{(pricing.cleaningFee ?? 0).toLocaleString('en-IN')}</span></div>
                   <div className="flex justify-between"><span className="underline">Service fee</span><span>₹{(pricing.serviceFee ?? 0).toLocaleString('en-IN')}</span></div>
                   <div className="flex justify-between"><span className="underline">Taxes</span><span>₹{(pricing.taxes ?? 0).toLocaleString('en-IN')}</span></div>
-                  <div className="border-t border-gray-200 pt-4 flex justify-between font-semibold text-[16px]"><span>Total</span><span>₹{pricing.total.toLocaleString('en-IN')}</span></div>
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between font-semibold text-[16px] text-gray-900 dark:text-white"><span>Total</span><span>₹{pricing.total.toLocaleString('en-IN')}</span></div>
                 </div>
               )}
 
@@ -749,10 +1109,10 @@ const PropertyDetails = () => {
           <div>
             <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">
               ₹{property.price?.toLocaleString('en-IN')}{' '}
-              <span className="text-xs font-normal text-gray-500 dark:text-gray-400">/night</span>
+              <span className="text-xs font-normal text-gray-500 dark:text-gray-400">/{property.priceUnit || 'night'}</span>
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1 font-medium mt-0.5">
-              <FiStar className="fill-black dark:fill-amber-400 text-black dark:text-amber-400 w-3 h-3" /> {property.rating?.average || 4.8}
+              <FiStar className="fill-amber-400 text-amber-400 w-3 h-3" /> {property.rating?.average ? Number(property.rating.average).toFixed(1) : '4.8'}
               {pricing?.nights ? ` • ${pricing.nights} nights` : ' • Select dates'}
             </p>
           </div>

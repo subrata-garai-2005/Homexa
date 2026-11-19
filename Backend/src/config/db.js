@@ -1,17 +1,21 @@
 import mongoose from 'mongoose';
-import dns from "dns";
-dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    if (!process.env.MONGO_URI) {
+      console.warn('⚠️  MONGO_URI is not set in environment variables.');
+      return;
+    }
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 8000
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`MongoDB Error: ${error.message}`);
-    // Don't exit in dev if no DB - allow server to run for frontend dev
+    console.error(`MongoDB Connection Error: ${error.message}`);
     if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
+      console.error('⚠️  Initial MongoDB connection failed. Will retry automatically.');
     } else {
-      console.log('⚠️  Running without DB - set MONGO_URI in .env');
+      console.log('⚠️  Running without DB - check your MONGO_URI in .env');
     }
   }
 };

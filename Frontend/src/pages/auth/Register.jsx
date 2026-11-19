@@ -32,38 +32,38 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex">
+    <div className="min-h-[80vh] flex bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 transition-colors">
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-[420px]">
           <div className="mb-8">
-            <h1 className="font-display text-3xl font-bold">Create account</h1>
-            <p className="text-gray-600 mt-2">Start your journey with Homexa</p>
+            <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-white">Create account</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Start your journey with Homexa</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>}
+            {error && <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">{error}</div>}
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Full name</label>
+              <label className="text-sm font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Full name</label>
               <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" className="input-field" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Email</label>
+              <label className="text-sm font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Email</label>
               <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" className="input-field" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Phone (optional)</label>
+              <label className="text-sm font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Phone (optional)</label>
               <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" className="input-field" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Password</label>
+              <label className="text-sm font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Password</label>
               <div className="relative">
                 <input type={showPass ? 'text' : 'password'} required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 6 characters" className="input-field pr-11" />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-500"><FiEyeOff className={showPass ? '' : 'hidden'} /><FiEye className={showPass ? 'hidden' : ''} /></button>
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><FiEyeOff className={showPass ? '' : 'hidden'} /><FiEye className={showPass ? 'hidden' : ''} /></button>
               </div>
             </div>
-            <button type="submit" disabled={loading} className="w-full btn-primary !py-3.5 !rounded-xl flex items-center justify-center gap-2">
+            <button type="submit" disabled={loading} className="w-full btn-primary !py-3.5 !rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm">
               {loading ? 'Creating...' : <>Create account <FiArrowRight /></>}
             </button>
-            <p className="text-center text-sm text-gray-600">Already have an account? <Link to="/login" className="font-semibold text-gray-900 underline">Log in</Link></p>
+            <p className="text-center text-sm text-gray-600 dark:text-gray-400">Already have an account? <Link to="/login" className="font-semibold text-gray-900 dark:text-white underline hover:text-primary-600">Log in</Link></p>
           </form>
         </div>
       </div>

@@ -6,7 +6,9 @@ import {
   updateProperty,
   deleteProperty,
   getHostProperties,
-  createPropertyReview
+  createPropertyReview,
+  deletePropertyReview,
+  toggleReviewHelpful
 } from '../controllers/propertyController.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
@@ -20,6 +22,8 @@ router.get('/:id', optionalAuth, validateObjectId('id'), getPropertyById);
 
 router.post('/', protect, upload.array('images', 10), createProperty);
 router.post('/:id/reviews', protect, validateObjectId('id'), createPropertyReview);
+router.delete('/:id/reviews/:reviewId', protect, validateObjectId('id'), deletePropertyReview);
+router.post('/:id/reviews/:reviewId/helpful', protect, validateObjectId('id'), toggleReviewHelpful);
 router.put('/:id', protect, validateObjectId('id'), upload.array('images', 10), updateProperty);
 router.delete('/:id', protect, validateObjectId('id'), deleteProperty);
 

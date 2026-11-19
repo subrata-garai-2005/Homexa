@@ -52,13 +52,17 @@ export default {
       };
 
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
-        init.body = request.body;
+        const bodyBuffer = await request.arrayBuffer();
+        if (bodyBuffer && bodyBuffer.byteLength > 0) {
+          init.body = bodyBuffer;
+        }
       }
 
       try {
         const response = await fetch(backendUrl, init);
         const resHeaders = new Headers(response.headers);
         resHeaders.set('Access-Control-Allow-Origin', '*');
+        resHeaders.set('Access-Control-Allow-Credentials', 'true');
         return new Response(response.body, {
           status: response.status,
           statusText: response.statusText,
@@ -69,10 +73,22 @@ export default {
         if (url.pathname === '/sitemap.xml' && env.ASSETS) {
           return env.ASSETS.fetch(request);
         }
-        return new Response(JSON.stringify({ success: false, error: err.message }), {
-          status: 502,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Backend connection failed: ${err.message || 'Server unreachable'}. Check that your backend (${backendBase}) is active.`,
+            error: err.message,
+            target: backendUrl,
+          }),
+          {
+            status: 502,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'X-Proxy-Error': String(err.message || '502 Bad Gateway'),
+            },
+          }
+        );
       }
     }
 

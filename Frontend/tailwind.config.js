@@ -8,6 +8,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        gray: {
+          850: '#172033',
+        },
         primary: {
           50: '#fff1f2',
           100: '#ffe4e6',

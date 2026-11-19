@@ -404,3 +404,101 @@ export const createPropertyReview = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to submit review' });
   }
 };
+
+export const deletePropertyReview = async (req, res) => {
+  try {
+    const { id: propertyId, reviewId } = req.params;
+
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+
+    const reviewIndex = property.reviews.findIndex(r => 
+      r._id?.toString() === reviewId || (r.user && r.user.toString() === req.user._id.toString())
+    );
+
+    if (reviewIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    const review = property.reviews[reviewIndex];
+    if (review.user && review.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this review' });
+    }
+
+    property.reviews.splice(reviewIndex, 1);
+
+    // Recalculate average rating & count
+    const totalReviews = property.reviews.length;
+    const avgRating = totalReviews > 0
+      ? Number((property.reviews.reduce((acc, item) => item.rating + acc, 0) / totalReviews).toFixed(1))
+      : 4.8;
+
+    property.rating = {
+      average: avgRating,
+      count: totalReviews
+    };
+
+    await property.save();
+
+    const updated = await Property.findById(propertyId)
+      .populate('host', 'name avatar email bio isHost')
+      .populate('reviews.user', 'name avatar');
+
+    res.json({
+      success: true,
+      message: 'Review deleted successfully',
+      property: updated
+    });
+  } catch (error) {
+    console.error('Delete review error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete review' });
+  }
+};
+
+export const toggleReviewHelpful = async (req, res) => {
+  try {
+    const { id: propertyId, reviewId } = req.params;
+
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+
+    const review = property.reviews.id(reviewId) || property.reviews.find(r => r._id?.toString() === reviewId);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    if (!review.likes) {
+      review.likes = [];
+    }
+
+    const userIdStr = req.user._id.toString();
+    const existingIndex = review.likes.findIndex(uid => uid.toString() === userIdStr);
+
+    if (existingIndex > -1) {
+      review.likes.splice(existingIndex, 1);
+    } else {
+      review.likes.push(req.user._id);
+    }
+
+    await property.save();
+
+    const updated = await Property.findById(propertyId)
+      .populate('host', 'name avatar email bio isHost')
+      .populate('reviews.user', 'name avatar');
+
+    res.json({
+      success: true,
+      message: existingIndex > -1 ? 'Helpful mark removed' : 'Marked as helpful',
+      likesCount: review.likes.length,
+      hasLiked: existingIndex === -1,
+      property: updated
+    });
+  } catch (error) {
+    console.error('Toggle helpful error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update helpful feedback' });
+  }
+};
