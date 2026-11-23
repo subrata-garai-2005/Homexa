@@ -16,4 +16,4 @@ Disallow: /register
 Disallow: /api/
 
 # Sitemap location
-Sitemap: https://somexa.netlify.app/sitemap.xml
+Sitemap: https://homexa.pages.dev/sitemap.xml
