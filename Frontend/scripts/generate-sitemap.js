@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BASE_URL = process.env.VITE_SITE_URL || 'https://homexa.pages.dev';
+const BASE_URL = process.env.VITE_SITE_URL || 'https://somexa.netlify.app';
 const API_URL = process.env.VITE_API_BASE_URL || process.env.VITE_API_URL || '';
 const today = new Date().toISOString().split('T')[0];
 
