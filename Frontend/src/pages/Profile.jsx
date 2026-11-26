@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateProfile, becomeHost } from '../store/slices/authSlice';
 import { toast } from '../utils/toast';
@@ -10,24 +10,27 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [showBecomeHostConfirm, setShowBecomeHostConfirm] = useState(false);
   const [form, setForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
     bio: user?.bio || '',
     avatar: user?.avatar || ''
   });
+  const [prevUser, setPrevUser] = useState(user);
 
-  // BUG FIX: Keep form in sync when user data loads asynchronously
-  useEffect(() => {
-    if (user) {
+  // Keep form in sync when user data loads asynchronously
+  if (user !== prevUser) {
+    setPrevUser(user);
+    if (!editing) {
       setForm({
-        name: user.name || '',
-        phone: user.phone || '',
-        bio: user.bio || '',
-        avatar: user.avatar || ''
+        name: user?.name || '',
+        phone: user?.phone || '',
+        bio: user?.bio || '',
+        avatar: user?.avatar || ''
       });
     }
-  }, [user]);
+  }
 
   const handleSave = async () => {
     if (!form.name.trim()) {
@@ -46,7 +49,11 @@ const Profile = () => {
   };
 
   const handleBecomeHost = async () => {
-    if (!confirm('Are you ready to become a host and list your stays?')) return;
+    if (!showBecomeHostConfirm) {
+      setShowBecomeHostConfirm(true);
+      return;
+    }
+    setShowBecomeHostConfirm(false);
     setUpgrading(true);
     const result = await dispatch(becomeHost());
     if (becomeHost.fulfilled.match(result)) {
@@ -80,13 +87,32 @@ const Profile = () => {
                     {user?.isHost ? <><FiCheck className="w-3 h-3" /> Host</> : 'Guest'}
                   </span>
                   {!user?.isHost && (
-                    <button
-                      onClick={handleBecomeHost}
-                      disabled={upgrading}
-                      className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <FiAward className="w-3.5 h-3.5" /> {upgrading ? 'Upgrading...' : 'Become a Host'}
-                    </button>
+                    showBecomeHostConfirm ? (
+                      <span className="flex items-center gap-1.5 text-xs">
+                        <span className="text-gray-600 dark:text-gray-300">Become a host?</span>
+                        <button
+                          onClick={handleBecomeHost}
+                          disabled={upgrading}
+                          className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                        >
+                          {upgrading ? 'Upgrading...' : 'Yes'}
+                        </button>
+                        <button
+                          onClick={() => setShowBecomeHostConfirm(false)}
+                          className="text-gray-500 hover:underline ml-1"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={handleBecomeHost}
+                        disabled={upgrading}
+                        className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <FiAward className="w-3.5 h-3.5" /> {upgrading ? 'Upgrading...' : 'Become a Host'}
+                      </button>
+                    )
                   )}
                 </div>
               </div>

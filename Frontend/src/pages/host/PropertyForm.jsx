@@ -48,41 +48,42 @@ const PropertyForm = () => {
   const [newFiles, setNewFiles] = useState([]);
   const [newFilePreviews, setNewFilePreviews] = useState([]);
 
+  const [loadedPropId, setLoadedPropId] = useState(null);
+
   useEffect(() => {
     if (isEdit && id) {
       dispatch(fetchPropertyById(id));
     }
   }, [id, isEdit, dispatch]);
 
-  useEffect(() => {
-    if (isEdit && selectedProperty && selectedProperty._id === id) {
-      setForm({
-        title: selectedProperty.title || '',
-        description: selectedProperty.description || '',
-        address: selectedProperty.location?.address || '',
-        city: selectedProperty.location?.city || '',
-        state: selectedProperty.location?.state || '',
-        country: selectedProperty.location?.country || 'India',
-        zipCode: selectedProperty.location?.zipCode || '',
-        lat: selectedProperty.location?.coordinates?.lat?.toString() || '20.5937',
-        lng: selectedProperty.location?.coordinates?.lng?.toString() || '78.9629',
-        price: selectedProperty.price?.toString() || '',
-        priceUnit: selectedProperty.priceUnit || 'night',
-        propertyType: selectedProperty.propertyType || 'apartment',
-        amenities: selectedProperty.amenities || [],
-        bedrooms: selectedProperty.bedrooms || 1,
-        beds: selectedProperty.beds || 1,
-        bathrooms: selectedProperty.bathrooms || 1,
-        maxGuests: selectedProperty.maxGuests || 2,
-        houseRules: selectedProperty.houseRules || '',
-        cancellationPolicy: selectedProperty.cancellationPolicy || 'flexible'
-      });
+  if (isEdit && selectedProperty && selectedProperty._id === id && loadedPropId !== selectedProperty._id) {
+    setLoadedPropId(selectedProperty._id);
+    setForm({
+      title: selectedProperty.title || '',
+      description: selectedProperty.description || '',
+      address: selectedProperty.location?.address || '',
+      city: selectedProperty.location?.city || '',
+      state: selectedProperty.location?.state || '',
+      country: selectedProperty.location?.country || 'India',
+      zipCode: selectedProperty.location?.zipCode || '',
+      lat: selectedProperty.location?.coordinates?.lat?.toString() || '20.5937',
+      lng: selectedProperty.location?.coordinates?.lng?.toString() || '78.9629',
+      price: selectedProperty.price?.toString() || '',
+      priceUnit: selectedProperty.priceUnit || 'night',
+      propertyType: selectedProperty.propertyType || 'apartment',
+      amenities: selectedProperty.amenities || [],
+      bedrooms: selectedProperty.bedrooms || 1,
+      beds: selectedProperty.beds || 1,
+      bathrooms: selectedProperty.bathrooms || 1,
+      maxGuests: selectedProperty.maxGuests || 2,
+      houseRules: selectedProperty.houseRules || '',
+      cancellationPolicy: selectedProperty.cancellationPolicy || 'flexible'
+    });
 
-      if (selectedProperty.images && Array.isArray(selectedProperty.images)) {
-        setExistingImages(selectedProperty.images.map(img => (typeof img === 'string' ? img : img.url)));
-      }
+    if (selectedProperty.images && Array.isArray(selectedProperty.images)) {
+      setExistingImages(selectedProperty.images.map(img => (typeof img === 'string' ? img : img.url)));
     }
-  }, [selectedProperty, isEdit, id]);
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;

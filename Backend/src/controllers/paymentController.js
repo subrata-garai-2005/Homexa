@@ -48,6 +48,8 @@ export const confirmBookingPayment = async (booking, { razorpayPaymentId, razorp
       cancelledAt: new Date(),
       reason: 'Dates were confirmed by another guest concurrently; automatic refund required'
     };
+    // Guard: booking.payment may be uninitialized on a fresh booking document
+    if (!booking.payment) booking.payment = {};
     if (razorpayPaymentId) booking.payment.razorpayPaymentId = razorpayPaymentId;
     booking.payment.status = 'refund_pending';
     await booking.save();
@@ -326,6 +328,12 @@ export const handleRazorpayWebhook = async (req, res) => {
     const effectiveSecret = secret || 'homexa_dev_secret';
 
     // 1. Verify Cryptographic Signature
+    // MUST use the original raw bytes — JSON.stringify re-serializes and can produce a different string,
+    // causing HMAC mismatch. Reject the webhook if rawBody is unavailable.
+    if (!req.rawBody && !isMockPaymentsAllowed()) {
+      console.error('Razorpay Webhook: rawBody missing — cannot verify signature');
+      return res.status(400).json({ success: false, message: 'Invalid webhook: raw payload unavailable' });
+    }
     const rawPayload = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
     const expectedSignature = crypto
       .createHmac('sha256', effectiveSecret)

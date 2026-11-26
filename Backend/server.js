@@ -21,7 +21,7 @@ import bookingRoutes from './src/routes/bookingRoutes.js';
 import paymentRoutes from './src/routes/paymentRoutes.js';
 import aiRoutes from './src/routes/aiRoutes.js';
 import Property from './src/models/Property.js';
-import rateLimit from 'express-rate-limit';
+import { apiLimiter } from './src/middleware/rateLimiter.js';
 import { getBaseUrl, prerenderRoute } from './src/utils/seoPrerender.js';
 
 const app = express();
@@ -31,7 +31,7 @@ const PORT = process.env.PORT || 5000;
 app.disable('x-powered-by');
 
 // Trust reverse proxies (EC2, Nginx, Load Balancers) to read client IP accurately
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 // Normalize trailing slashes: 301 permanent redirect /path/ to /path (exclude root '/')
 app.use((req, res, next) => {
@@ -104,34 +104,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Rate Limiting Configuration
-// 1. General API Rate Limiter (200 requests per 15 mins per IP)
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Too many requests from this IP, please try again after 15 minutes'
-  }
-});
-
-// 2. Auth Rate Limiter (20 attempts per 15 mins to protect against brute-force)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Too many login/registration attempts. Please try again after 15 minutes'
-  }
-});
-
-// Apply rate limiting to APIs (Static files, Google verification, robots.txt are exempt)
+// Apply general API rate limiting
 app.use('/api', apiLimiter);
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
@@ -147,6 +122,13 @@ app.get('/google7777e5ba595168f6.html', (req, res) => {
 // Reject any non-existent google verification requests with 404 (required by Google Search Console security check)
 app.get('/google*.html', (req, res) => {
   res.status(404).send('Not Found');
+});
+
+// Bing Webmaster Tools verification route
+app.get('/BingSiteAuth.xml', (req, res) => {
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.status(200).send('<?xml version="1.0"?>\n<users>\n\t<user>C7030712442E8CCEB8BC27BEBAC17BF4</user>\n</users>');
 });
 
 
@@ -187,10 +169,14 @@ app.get(['/sitemap.xml', '//sitemap.xml'], async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     let properties = [];
-    try {
-      properties = await Property.find({ isActive: { $ne: false } }, '_id updatedAt').lean();
-    } catch (err) {
-      console.warn('Could not query properties for sitemap:', err.message);
+    if (mongoose.connection?.readyState === 1) {
+      try {
+        properties = await Property.find({ isActive: { $ne: false } }, '_id updatedAt')
+          .lean()
+          .maxTimeMS(2000);
+      } catch (err) {
+        console.warn('Could not query properties for sitemap:', err.message);
+      }
     }
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -377,10 +363,15 @@ if (fs.existsSync(frontendDistPath)) {
       }
 
       const rawHtml = fs.readFileSync(indexPath, 'utf-8');
-      const renderedHtml = await prerenderRoute(req, rawHtml);
+      const { html: renderedHtml, statusCode = 200 } = await prerenderRoute(req, rawHtml);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
-      return res.status(200).send(renderedHtml);
+      res.setHeader(
+        'Cache-Control',
+        statusCode === 404
+          ? 'no-cache, no-store, must-revalidate'
+          : 'public, max-age=120, stale-while-revalidate=600'
+      );
+      return res.status(statusCode).send(renderedHtml);
     } catch (err) {
       console.error('Error in SEO prerender handler:', err);
       return res.sendFile(path.join(frontendDistPath, 'index.html'));
@@ -396,7 +387,7 @@ if (fs.existsSync(frontendDistPath)) {
 }
 
 // 404 for remaining unhandled routes
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
 });
 

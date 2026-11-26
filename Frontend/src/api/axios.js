@@ -38,6 +38,18 @@ api.interceptors.response.use(
       }
     }
 
+    if (error.response?.status === 429) {
+      if (!error.response.data || typeof error.response.data !== 'object') {
+        error.response.data = {};
+      }
+      const retryAfter = error.response.headers?.['retry-after'];
+      const defaultMsg = retryAfter
+        ? `Rate limit exceeded. Please wait ${retryAfter} seconds before trying again.`
+        : (error.response.data.message || 'Too many requests. Please slow down and try again in a moment.');
+      error.response.data.message = defaultMsg;
+      error.message = defaultMsg;
+    }
+
     if (error.response?.status === 401) {
       const isAuthRoute = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
       if (!isAuthRoute) {

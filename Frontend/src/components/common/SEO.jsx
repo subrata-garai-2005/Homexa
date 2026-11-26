@@ -13,6 +13,7 @@ const SEO = ({
   url,
   type = 'website',
   schema,
+  noindex = false,
 }) => {
   useEffect(() => {
     // 1. Dynamic Page Title
@@ -45,7 +46,11 @@ const SEO = ({
       el.setAttribute('href', href);
     };
 
-    const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
+    const currentUrl =
+      url ||
+      (typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}`
+        : '');
     const defaultImage = `${typeof window !== 'undefined' ? window.location.origin : ''}/assets/property2.webp`;
     const resolvedImage = image || defaultImage;
     const resolvedDesc =
@@ -57,6 +62,11 @@ const SEO = ({
     if (keywords) {
       setMeta('name', 'keywords', keywords);
     }
+    const robotsDirective = noindex
+      ? 'noindex, nofollow'
+      : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+    setMeta('name', 'robots', robotsDirective);
+    setMeta('name', 'bingbot', noindex ? 'noindex, nofollow' : 'index, follow');
     setLink('canonical', currentUrl);
 
     // Open Graph / Facebook
@@ -94,7 +104,7 @@ const SEO = ({
       const tag = document.getElementById(scriptId);
       if (tag) tag.remove();
     };
-  }, [title, description, keywords, image, url, type, schema]);
+  }, [title, description, keywords, image, url, type, schema, noindex]);
 
   return null;
 };

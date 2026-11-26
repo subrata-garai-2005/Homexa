@@ -11,15 +11,21 @@ const HostDashboard = () => {
   const { hostProperties } = useSelector(s => s.properties);
   const { hostBookings } = useSelector(s => s.bookings);
   const [activeTab, setActiveTab] = useState('properties');
+  const [deletingId, setDeletingId] = useState(null); // id pending confirmation
 
   useEffect(() => {
     dispatch(fetchHostProperties());
     dispatch(fetchHostBookings());
   }, [dispatch]);
 
-  // BUG FIX: delete result was not handled — no feedback to user on success/failure
   const handleDelete = async (id) => {
-    if (!confirm('Delete this property? This action cannot be undone.')) return;
+    if (deletingId !== id) {
+      // First click — ask for confirmation inline
+      setDeletingId(id);
+      return;
+    }
+    // Second click — confirmed
+    setDeletingId(null);
     const result = await dispatch(deleteProperty(id));
     if (deleteProperty.fulfilled.match(result)) {
       toast.success('Property deleted successfully');
@@ -96,7 +102,14 @@ const HostDashboard = () => {
                     <div className="flex gap-2 mt-4">
                       <Link to={`/properties/${property._id}`} className="flex-1 btn-secondary !py-2 !px-3 text-sm flex items-center justify-center gap-1"><FiEye /> View</Link>
                       <Link to={`/host/edit/${property._id}`} className="flex-1 btn-secondary !py-2 !px-3 text-sm flex items-center justify-center gap-1"><FiEdit2 /> Edit</Link>
-                      <button onClick={() => handleDelete(property._id)} className="p-2 rounded-xl border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"><FiTrash2 /></button>
+                      {deletingId === property._id ? (
+                        <div className="flex gap-1">
+                          <button onClick={() => handleDelete(property._id)} className="p-2 rounded-xl border border-red-500 bg-red-500 text-white text-xs font-medium cursor-pointer" title="Confirm delete">✓</button>
+                          <button onClick={() => setDeletingId(null)} className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-xs cursor-pointer" title="Cancel">✕</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => handleDelete(property._id)} className="p-2 rounded-xl border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer" title="Delete property"><FiTrash2 /></button>
+                      )}
                     </div>
                   </div>
                 </div>

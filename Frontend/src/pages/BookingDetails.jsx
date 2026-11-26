@@ -18,6 +18,7 @@ const BookingDetails = () => {
   const { selectedBooking: booking, loading } = useSelector(s => s.bookings);
   const { user } = useSelector(s => s.auth);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -26,7 +27,11 @@ const BookingDetails = () => {
   }, [id, dispatch]);
 
   const handleCancel = async () => {
-    if (!confirm('Cancel this booking? Refund policy will apply.')) return;
+    if (!showCancelConfirm) {
+      setShowCancelConfirm(true);
+      return;
+    }
+    setShowCancelConfirm(false);
     setCancelling(true);
     const result = await dispatch(cancelBooking(id));
     if (cancelBooking.fulfilled.match(result)) {
@@ -192,13 +197,25 @@ const BookingDetails = () => {
 
             <div className="flex flex-col gap-2">
               {['pending', 'confirmed'].includes(booking.status) && (
-                <button 
-                  onClick={handleCancel} 
-                  disabled={cancelling} 
-                  className="btn-secondary w-full border-red-200 text-red-600 hover:bg-red-50"
-                >
-                  {cancelling ? 'Cancelling...' : 'Cancel booking'}
-                </button>
+                showCancelConfirm ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-4">
+                    <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-3">Cancel this booking? Refund policy will apply.</p>
+                    <div className="flex gap-2">
+                      <button onClick={handleCancel} disabled={cancelling} className="flex-1 btn-primary !bg-red-600 hover:!bg-red-700 !text-white text-sm py-2">
+                        {cancelling ? 'Cancelling...' : 'Yes, cancel'}
+                      </button>
+                      <button onClick={() => setShowCancelConfirm(false)} className="flex-1 btn-secondary text-sm py-2">Keep booking</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    className="btn-secondary w-full border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    {cancelling ? 'Cancelling...' : 'Cancel booking'}
+                  </button>
+                )
               )}
               <Link to={`/properties/${property?._id}`} className="btn-secondary w-full text-center">
                 View property

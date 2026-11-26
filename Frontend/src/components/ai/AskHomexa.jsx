@@ -19,6 +19,7 @@ import {
   FiSquare
 } from 'react-icons/fi';
 import api from '../../api/axios';
+import { toast } from '../../utils/toast';
 
 // Robot icon matching the user's design with cutout eyes and pixel smile
 export const RobotIcon = ({ className = "w-6 h-6", color = "currentColor" }) => (
@@ -296,7 +297,7 @@ const AskHomexa = () => {
   const handleGenerateTripPlan = async (e) => {
     if (e) e.preventDefault();
     if (!tripForm.destination.trim()) {
-      alert('Please enter a destination');
+      toast.warning('Please enter a destination');
       return;
     }
 

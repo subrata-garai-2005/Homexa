@@ -1,8 +1,14 @@
 import { Link } from 'react-router-dom';
 import { FiArrowLeft, FiCompass } from 'react-icons/fi';
+import SEO from './common/SEO';
 
 const NotFound = () => (
   <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden px-4">
+    <SEO
+      title="Page Not Found"
+      description="The page you are looking for does not exist or has moved."
+      noindex
+    />
     <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-primary-500/20 blur-3xl animate-blob" />
     <div className="absolute -bottom-24 -right-16 w-[28rem] h-[28rem] rounded-full bg-violet-500/20 blur-3xl animate-blob-slow" />
     <div className="relative text-center max-w-md animate-scale-in">

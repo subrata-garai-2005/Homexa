@@ -38,8 +38,8 @@ export const getBaseUrl = (req) => {
   }
   const protocol = getProtocol(req);
   const forwardedHost = req.headers['x-forwarded-host']?.split(',')[0].trim();
-  const rawHost = forwardedHost || req.get('host') || 'somexa.netlify.app';
-  const safeHost = /^[a-zA-Z0-9.-]+(:\d+)?$/.test(rawHost) ? rawHost : 'somexa.netlify.app';
+  const rawHost = forwardedHost || req.get('host') || 'homexa-bqs.pages.dev';
+  const safeHost = /^[a-zA-Z0-9.-]+(:\d+)?$/.test(rawHost) ? rawHost : 'homexa-bqs.pages.dev';
   return `${protocol}://${safeHost}`;
 };
 
@@ -51,6 +51,10 @@ export const isBot = (req) => {
   const botKeywords = [
     'googlebot',
     'bingbot',
+    'msnbot',
+    'adidxbot',
+    'bingpreview',
+    'duckduckbot',
     'yandex',
     'baiduspider',
     'facebookexternalhit',
@@ -82,8 +86,14 @@ export const isBot = (req) => {
 /**
  * Replaces meta tags, canonical link, and body content inside the raw index.html template.
  */
-const injectMetadataAndContent = (html, { title, description, canonicalUrl, ogImage, schema, bodyContent }) => {
+const injectMetadataAndContent = (html, { title, description, canonicalUrl, ogImage, schema, bodyContent, noindex = false }) => {
   let modifiedHtml = html;
+
+  if (noindex) {
+    modifiedHtml = modifiedHtml.replace(/<meta\s+name=["']robots["'][^>]*>/i, '<meta name="robots" content="noindex, nofollow" />');
+    modifiedHtml = modifiedHtml.replace(/<meta\s+name=["']googlebot["'][^>]*>/i, '<meta name="googlebot" content="noindex, nofollow" />');
+    modifiedHtml = modifiedHtml.replace(/<meta\s+name=["']bingbot["'][^>]*>/i, '<meta name="bingbot" content="noindex, nofollow" />');
+  }
 
   // Title
   if (title) {
@@ -367,40 +377,43 @@ export const prerenderRoute = async (req, rawHtml) => {
       }
     }
 
-    return injectMetadataAndContent(rawHtml, {
-      title: 'Homexa - Vacation Rentals, Luxury Villas & Unique Stays',
-      description: 'Discover and book handpicked vacation rentals, beachfront villas, cozy mountain cabins, and modern apartments with Homexa. Instant booking and verified hosts.',
-      canonicalUrl: `${baseUrl}/`,
-      ogImage: `${baseUrl}/assets/property2.webp`,
-      schema: {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "WebSite",
-            "@id": `${baseUrl}/#website`,
-            "name": "Homexa",
-            "url": `${baseUrl}/`,
-            "description": "Premium vacation rentals, luxury villas, and holiday homes booking platform.",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": `${baseUrl}/properties?search={search_term_string}`
-              },
-              "query-input": "required name=search_term_string"
+    return {
+      statusCode: 200,
+      html: injectMetadataAndContent(rawHtml, {
+        title: 'Homexa - Vacation Rentals, Luxury Villas & Unique Stays',
+        description: 'Discover and book handpicked vacation rentals, beachfront villas, cozy mountain cabins, and modern apartments with Homexa. Instant booking and verified hosts.',
+        canonicalUrl: `${baseUrl}/`,
+        ogImage: `${baseUrl}/assets/property2.webp`,
+        schema: {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              "@id": `${baseUrl}/#website`,
+              "name": "Homexa",
+              "url": `${baseUrl}/`,
+              "description": "Premium vacation rentals, luxury villas, and holiday homes booking platform.",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": `${baseUrl}/properties?search={search_term_string}`
+                },
+                "query-input": "required name=search_term_string"
+              }
+            },
+            {
+              "@type": "Organization",
+              "@id": `${baseUrl}/#organization`,
+              "name": "Homexa",
+              "url": `${baseUrl}/`,
+              "logo": `${baseUrl}/favicon.svg`
             }
-          },
-          {
-            "@type": "Organization",
-            "@id": `${baseUrl}/#organization`,
-            "name": "Homexa",
-            "url": `${baseUrl}/`,
-            "logo": `${baseUrl}/favicon.svg`
-          }
-        ]
-      },
-      bodyContent: isCrawler ? renderHomeBody(properties) : null
-    });
+          ]
+        },
+        bodyContent: isCrawler ? renderHomeBody(properties) : null
+      })
+    };
   }
 
   // 2. Properties Listing (/properties)
@@ -418,13 +431,16 @@ export const prerenderRoute = async (req, rawHtml) => {
       }
     }
 
-    return injectMetadataAndContent(rawHtml, {
-      title: 'Explore Vacation Rentals & Unique Stays | Homexa',
-      description: 'Explore handpicked vacation rentals, beachfront villas, cozy mountain cabins, and apartments on Homexa. Verified hosts and instant confirmation.',
-      canonicalUrl,
-      ogImage: `${baseUrl}/assets/property2.webp`,
-      bodyContent: isCrawler ? renderPropertiesBody(properties) : null
-    });
+    return {
+      statusCode: 200,
+      html: injectMetadataAndContent(rawHtml, {
+        title: 'Explore Vacation Rentals & Unique Stays | Homexa',
+        description: 'Explore handpicked vacation rentals, beachfront villas, cozy mountain cabins, and apartments on Homexa. Verified hosts and instant confirmation.',
+        canonicalUrl,
+        ogImage: `${baseUrl}/assets/property2.webp`,
+        bodyContent: isCrawler ? renderPropertiesBody(properties) : null
+      })
+    };
   }
 
   // 3. Single Property Detail (/properties/:id)
@@ -432,7 +448,8 @@ export const prerenderRoute = async (req, rawHtml) => {
   if (propMatch) {
     const propId = propMatch[1];
     let property = null;
-    if (mongoose.connection?.readyState === 1) {
+    const dbConnected = mongoose.connection?.readyState === 1;
+    if (dbConnected) {
       try {
         property = await Property.findById(propId).lean().maxTimeMS(2000);
       } catch (e) {
@@ -447,27 +464,45 @@ export const prerenderRoute = async (req, rawHtml) => {
         ? property.description.slice(0, 155)
         : `Book ${property.title} in ${city}. Instant confirmation and best rates on Homexa.`;
 
-      return injectMetadataAndContent(rawHtml, {
-        title: `${property.title} in ${city} | Homexa`,
-        description: cleanDesc,
-        canonicalUrl,
-        ogImage: firstImg,
-        schema: {
-          "@context": "https://schema.org",
-          "@type": "LodgingBusiness",
-          "name": property.title,
-          "description": cleanDesc,
-          "image": (property.images || []).map(img => (typeof img === 'string' ? img : img?.url)).filter(Boolean),
-          "priceRange": `₹${property.price} / ${property.priceUnit || 'night'}`,
-          "address": {
-            "@type": "PostalAddress",
-            "addressLocality": property.location?.city,
-            "addressRegion": property.location?.state,
-            "addressCountry": property.location?.country || "IN"
-          }
-        },
-        bodyContent: isCrawler ? renderPropertyDetailBody(property) : null
-      });
+      return {
+        statusCode: 200,
+        html: injectMetadataAndContent(rawHtml, {
+          title: `${property.title} in ${city} | Homexa`,
+          description: cleanDesc,
+          canonicalUrl,
+          ogImage: firstImg,
+          schema: {
+            "@context": "https://schema.org",
+            "@type": "LodgingBusiness",
+            "name": property.title,
+            "description": cleanDesc,
+            "image": (property.images || []).map(img => (typeof img === 'string' ? img : img?.url)).filter(Boolean),
+            "priceRange": `₹${property.price} / ${property.priceUnit || 'night'}`,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": property.location?.city,
+              "addressRegion": property.location?.state,
+              "addressCountry": property.location?.country || "IN"
+            }
+          },
+          bodyContent: isCrawler ? renderPropertyDetailBody(property) : null
+        })
+      };
+    }
+
+    if (dbConnected) {
+      return {
+        statusCode: 404,
+        html: injectMetadataAndContent(rawHtml, {
+          title: 'Property Not Found | Homexa',
+          description: 'The requested vacation rental property could not be found on Homexa.',
+          canonicalUrl,
+          noindex: true,
+          bodyContent: isCrawler
+            ? '<main style="max-width:720px;margin:4rem auto;padding:0 1.5rem;"><h1>Property Not Found</h1><p>This listing is no longer available. <a href="/properties">Browse all stays</a>.</p></main>'
+            : null
+        })
+      };
     }
   }
 
@@ -503,17 +538,42 @@ export const prerenderRoute = async (req, rawHtml) => {
       </main>
     `;
 
-    return injectMetadataAndContent(rawHtml, {
-      title: 'Interactive Map - Explore Stays & Vacation Rentals | Homexa',
-      description: 'Explore vacation rentals, beach villas, and boutique stays on an interactive map. Find properties near top destinations on Homexa.',
-      canonicalUrl,
-      ogImage: `${baseUrl}/assets/property2.webp`,
-      bodyContent: isCrawler ? mapBody : null
-    });
+    return {
+      statusCode: 200,
+      html: injectMetadataAndContent(rawHtml, {
+        title: 'Interactive Map - Explore Stays & Vacation Rentals | Homexa',
+        description: 'Explore vacation rentals, beach villas, and boutique stays on an interactive map. Find properties near top destinations on Homexa.',
+        canonicalUrl,
+        ogImage: `${baseUrl}/assets/property2.webp`,
+        bodyContent: isCrawler ? mapBody : null
+      })
+    };
   }
 
-  // Default Fallback
-  return injectMetadataAndContent(rawHtml, {
-    canonicalUrl
-  });
+  // 5. Known Private / Auth SPA Routes (200 OK, but noindex)
+  const isPrivateSpaRoute =
+    /^\/(login|register|profile|wishlist|bookings|host|trip-planner)(\/|$)/.test(cleanPath);
+  if (isPrivateSpaRoute) {
+    return {
+      statusCode: 200,
+      html: injectMetadataAndContent(rawHtml, {
+        canonicalUrl,
+        noindex: true
+      })
+    };
+  }
+
+  // 6. Unknown Routes -> 404 (prevents Soft 404 crawl errors in Bing/Google Webmaster Tools)
+  return {
+    statusCode: 404,
+    html: injectMetadataAndContent(rawHtml, {
+      title: 'Page Not Found | Homexa',
+      description: 'The page you are looking for does not exist or has moved.',
+      canonicalUrl,
+      noindex: true,
+      bodyContent: isCrawler
+        ? '<main style="max-width:720px;margin:4rem auto;padding:0 1.5rem;"><h1>404 - Page Not Found</h1><p>The page you are looking for does not exist. <a href="/">Back to Homexa Home</a>.</p></main>'
+        : null
+    })
+  };
 };

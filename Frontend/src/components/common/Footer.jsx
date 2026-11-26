@@ -15,9 +15,9 @@ const Footer = () => {
               Find your perfect stay anywhere in the world. Curated homes, villas, cabins and unique stays with AI-powered discovery.
             </p>
             <div className="flex gap-3 mt-5">
-              <a href="#" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><FiTwitter className="w-4 h-4" /></a>
-              <a href="#" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><FiInstagram className="w-4 h-4" /></a>
-              <a href="#" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><FiGithub className="w-4 h-4" /></a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Homexa on Twitter" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><FiTwitter className="w-4 h-4" /></a>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Homexa on Instagram" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><FiInstagram className="w-4 h-4" /></a>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="Homexa on GitHub" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><FiGithub className="w-4 h-4" /></a>
             </div>
           </div>
           <div>
@@ -53,7 +53,7 @@ const Footer = () => {
           <div className="flex gap-6">
             <a href="#" className="hover:text-gray-900 dark:hover:text-white">Privacy</a>
             <a href="#" className="hover:text-gray-900 dark:hover:text-white">Terms</a>
-            <a href="#" className="hover:text-gray-900 dark:hover:text-white">Sitemap</a>
+            <a href="/sitemap.xml" className="hover:text-gray-900 dark:hover:text-white">Sitemap</a>
           </div>
         </div>
       </div>

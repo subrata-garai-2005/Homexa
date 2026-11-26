@@ -415,7 +415,7 @@ export const deletePropertyReview = async (req, res) => {
     }
 
     const reviewIndex = property.reviews.findIndex(r => 
-      r._id?.toString() === reviewId || (r.user && r.user.toString() === req.user._id.toString())
+      r._id?.toString() === reviewId
     );
 
     if (reviewIndex === -1) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FiSearch, FiSliders, FiX, FiMapPin, FiHome, FiGrid, FiLayers, FiSun, FiCompass, FiAnchor, FiAward, FiFeather } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setFilters, clearFilters } from '../../store/slices/propertySlice';
@@ -21,11 +21,13 @@ const SearchFilters = ({ onSearch }) => {
   const filters = useSelector(s => s.properties.filters);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [localSearch, setLocalSearch] = useState(filters.search || '');
+  const [prevSearch, setPrevSearch] = useState(filters.search || '');
 
-  // BUG FIX: Keep local search input in sync when filters change from outside (URL or Clear All)
-  useEffect(() => {
+  // Keep local search input in sync when filters change from outside (URL or Clear All)
+  if (filters.search !== prevSearch) {
+    setPrevSearch(filters.search || '');
     setLocalSearch(filters.search || '');
-  }, [filters.search]);
+  }
 
   const handleSearch = () => {
     dispatch(setFilters({ search: localSearch }));

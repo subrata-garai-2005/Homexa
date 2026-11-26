@@ -10,13 +10,12 @@ import 'leaflet/dist/leaflet.css';
 
 injectStore(store);
 
-// Silence all console logs and warnings in production
+// Silence verbose logs in production but preserve error/warn for monitoring
 if (import.meta.env.PROD) {
   console.log = () => {};
   console.info = () => {};
   console.debug = () => {};
-  console.warn = () => {};
-  console.error = () => {};
+  // console.warn and console.error are intentionally kept so runtime errors remain visible
 }
 
 // Suppress benign browser extension content script communication errors

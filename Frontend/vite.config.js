@@ -5,7 +5,20 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   build: {
-    sourcemap: false
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('leaflet')) return 'vendor-leaflet';
+            if (id.includes('react-icons')) return 'vendor-icons';
+            if (id.includes('react-router-dom') || id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
+              return 'vendor-react';
+            }
+          }
+        }
+      }
+    }
   },
   server: {
     proxy: {

@@ -2,11 +2,15 @@ import express from 'express';
 import { register, login, getProfile, updateProfile, toggleWishlist, becomeHost, getWishlist } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import { validateObjectId } from '../middleware/validateObjectId.js';
+import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
+// Strict brute-force rate limiter only on registration & login
+router.post('/register', authLimiter, register);
+router.post('/login', authLimiter, login);
+
+// Profile and Wishlist routes (exempt from auth brute-force limiter)
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
 router.post('/become-host', protect, becomeHost);

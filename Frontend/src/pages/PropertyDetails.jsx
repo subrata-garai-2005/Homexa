@@ -11,7 +11,7 @@ import { toast } from '../utils/toast';
 import {
   FiHeart, FiShare2, FiStar, FiMapPin, FiHome, FiUsers, FiCalendar, FiCheck,
   FiWifi, FiCoffee, FiWind, FiTv, FiDroplet, FiShield,
-  FiCopy, FiX, FiCheckCircle, FiSend, FiLoader, FiMessageSquare, FiGrid, FiAlertCircle,
+  FiCopy, FiX, FiCheckCircle, FiSend, FiLoader, FiMessageSquare, FiGrid,
   FiThumbsUp, FiTrash2, FiEdit2, FiFilter, FiAward
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
@@ -59,6 +59,7 @@ const PropertyDetails = () => {
   const [reviewFilter, setReviewFilter] = useState('all');
   const [reviewSort, setReviewSort] = useState('newest');
   const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const [confirmDeleteReviewId, setConfirmDeleteReviewId] = useState(null);
   const [helpfulLoadingId, setHelpfulLoadingId] = useState(null);
 
   const handleCopyLink = () => {
@@ -78,7 +79,7 @@ const PropertyDetails = () => {
         title: property?.title,
         text: `Check out ${property?.title} in ${property?.location?.city} on Homexa!`,
         url: window.location.href,
-      }).catch(() => {});
+      }).catch(() => { });
     } else {
       handleCopyLink();
     }
@@ -129,9 +130,10 @@ const PropertyDetails = () => {
   };
 
   const userExistingReview = useMemo(() => {
-    if (!user?._id || !property?.reviews?.length) return null;
+    const reviews = property?.reviews;
+    if (!user?._id || !reviews?.length) return null;
     const currentUid = user._id.toString();
-    return property.reviews.find(r => (r.user?._id || r.user)?.toString() === currentUid);
+    return reviews.find(r => (r.user?._id || r.user)?.toString() === currentUid);
   }, [user, property?.reviews]);
 
   const ratingStats = useMemo(() => {
@@ -176,7 +178,11 @@ const PropertyDetails = () => {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (!confirm('Are you sure you want to delete your review?')) return;
+    if (confirmDeleteReviewId !== reviewId) {
+      setConfirmDeleteReviewId(reviewId);
+      return;
+    }
+    setConfirmDeleteReviewId(null);
     setDeletingReviewId(reviewId);
     try {
       const res = await api.delete(`/properties/${property._id}/reviews/${reviewId}`);
@@ -209,7 +215,7 @@ const PropertyDetails = () => {
   };
 
   const isSaved = Boolean(user?.wishlist?.some(item => (item?._id || item)?.toString() === property?._id?.toString()));
-  const isMockProperty = Boolean(property?._id && (property._id.startsWith('stay-') || property._id.startsWith('mock')));
+  const isMockProperty = Boolean(property?._id && (String(property._id).startsWith('stay-') || String(property._id).startsWith('mock')));
 
   const handleToggleSave = async () => {
     if (!isAuthenticated) {
@@ -299,7 +305,14 @@ const PropertyDetails = () => {
       toast.warning('Please select check-in and check-out dates');
       return;
     }
+    if (guests.adults < 1) {
+      toast.warning('At least 1 adult guest is required');
+      return;
+    }
     setBookingLoading(true);
+    // Track whether we handed off to the Razorpay modal — if so, the modal's
+    // own callbacks manage loading state and the finally block must not interfere.
+    let razorpayHandedOff = false;
     try {
       const totalGuests = guests.adults + guests.children;
       const res = await api.post('/bookings', {
@@ -315,7 +328,7 @@ const PropertyDetails = () => {
       // Create Razorpay order with idempotency key
       const idempotencyKey = `idemp_${bookingId}_${Date.now()}`;
       const orderRes = await api.post('/payments/create-order', { bookingId, idempotencyKey });
-      
+
       if (orderRes.data.mocked) {
         // Mock payment success for demo
         await api.post('/payments/verify', {
@@ -327,7 +340,7 @@ const PropertyDetails = () => {
         toast.success('Booking confirmed! 🎉');
         navigate(`/bookings/${bookingId}?success=true`);
       } else {
-        // Real Razorpay — must manage loading state inside callbacks
+        // Real Razorpay — loading is managed inside the modal callbacks
         setBookingLoading(false);
 
         const cancelPendingBooking = async (reason) => {
@@ -389,13 +402,15 @@ const PropertyDetails = () => {
           toast.warning(`Payment attempt failed: ${reason}. You can try again or choose another payment method.`);
         });
 
+        razorpayHandedOff = true; // prevent finally from resetting loading
         rzp.open();
         return; // Don't run finally below since loading is managed inside callbacks
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Booking failed');
     } finally {
-      setBookingLoading(false);
+      // Only reset loading here when Razorpay was NOT opened; the modal manages its own state
+      if (!razorpayHandedOff) setBookingLoading(false);
     }
   };
 
@@ -684,25 +699,41 @@ const PropertyDetails = () => {
                       >
                         <FiEdit2 className="w-3.5 h-3.5" /> Edit
                       </button>
-                      <button
-                        onClick={() => handleDeleteReview(userExistingReview._id)}
-                        disabled={deletingReviewId === userExistingReview._id}
-                        className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                      >
-                        <FiTrash2 className="w-3.5 h-3.5" />
-                        {deletingReviewId === userExistingReview._id ? 'Deleting...' : 'Delete'}
-                      </button>
+                      {confirmDeleteReviewId === userExistingReview._id ? (
+                        <span className="flex items-center gap-1.5 text-xs">
+                          <button
+                            onClick={() => handleDeleteReview(userExistingReview._id)}
+                            className="font-semibold text-red-600 hover:underline"
+                          >
+                            Delete?
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteReviewId(null)}
+                            className="text-gray-500 hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteReview(userExistingReview._id)}
+                          disabled={deletingReviewId === userExistingReview._id}
+                          className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          <FiTrash2 className="w-3.5 h-3.5" />
+                          {deletingReviewId === userExistingReview._id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 mb-1.5">
                     {[...Array(5)].map((_, i) => (
                       <FiStar
                         key={i}
-                        className={`w-4 h-4 ${
-                          i < (userExistingReview.rating || 5)
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-gray-300 dark:text-gray-600'
-                        }`}
+                        className={`w-4 h-4 ${i < (userExistingReview.rating || 5)
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-gray-300 dark:text-gray-600'
+                          }`}
                       />
                     ))}
                   </div>
@@ -722,11 +753,10 @@ const PropertyDetails = () => {
                     </span>
                     <button
                       onClick={() => setReviewFilter('all')}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-                        reviewFilter === 'all'
-                          ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${reviewFilter === 'all'
+                        ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
                     >
                       All ({ratingStats.total})
                     </button>
@@ -737,11 +767,10 @@ const PropertyDetails = () => {
                         <button
                           key={star}
                           onClick={() => setReviewFilter(String(star))}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
-                            reviewFilter === String(star)
-                              ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                          }`}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 ${reviewFilter === String(star)
+                            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
                         >
                           {star}★ ({count})
                         </button>
@@ -772,8 +801,8 @@ const PropertyDetails = () => {
                   {userExistingReview ? 'Update your review' : 'Share your stay experience'}
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  {userExistingReview 
-                    ? 'Modify your rating or feedback below to update your verified review.' 
+                  {userExistingReview
+                    ? 'Modify your rating or feedback below to update your verified review.'
                     : 'Help future travelers with your honest rating and feedback about the stay, host, and amenities.'}
                 </p>
 
@@ -809,11 +838,10 @@ const PropertyDetails = () => {
                               className="p-1 focus:outline-none transition-transform hover:scale-125 cursor-pointer"
                             >
                               <FiStar
-                                className={`w-7 h-7 transition-colors ${
-                                  (hoverRating || reviewRating) >= star
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
-                                }`}
+                                className={`w-7 h-7 transition-colors ${(hoverRating || reviewRating) >= star
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
+                                  }`}
                               />
                             </button>
                           ))}
@@ -930,14 +958,31 @@ const PropertyDetails = () => {
                                 >
                                   <FiEdit2 className="w-3.5 h-3.5" />
                                 </button>
-                                <button
-                                  onClick={() => handleDeleteReview(rev._id)}
-                                  disabled={deletingReviewId === rev._id}
-                                  title="Delete review"
-                                  className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer transition-colors"
-                                >
-                                  <FiTrash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {confirmDeleteReviewId === rev._id ? (
+                                  <span className="flex items-center gap-1 text-xs">
+                                    <button
+                                      onClick={() => handleDeleteReview(rev._id)}
+                                      className="font-semibold text-red-600 hover:underline"
+                                    >
+                                      Delete?
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteReviewId(null)}
+                                      className="text-gray-500 hover:underline"
+                                    >
+                                      ✕
+                                    </button>
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleDeleteReview(rev._id)}
+                                    disabled={deletingReviewId === rev._id}
+                                    title="Delete review"
+                                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer transition-colors"
+                                  >
+                                    <FiTrash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -947,11 +992,10 @@ const PropertyDetails = () => {
                             {[...Array(5)].map((_, i) => (
                               <FiStar
                                 key={i}
-                                className={`w-3.5 h-3.5 ${
-                                  i < (rev.rating || 5)
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'text-gray-200 dark:text-gray-700'
-                                }`}
+                                className={`w-3.5 h-3.5 ${i < (rev.rating || 5)
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-gray-200 dark:text-gray-700'
+                                  }`}
                               />
                             ))}
                           </div>
@@ -968,11 +1012,10 @@ const PropertyDetails = () => {
                             type="button"
                             onClick={() => handleToggleHelpful(rev._id)}
                             disabled={helpfulLoadingId === rev._id}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-                              hasLiked
-                                ? 'bg-primary-50 dark:bg-primary-950/60 border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-300'
-                                : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
-                            }`}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all cursor-pointer ${hasLiked
+                              ? 'bg-primary-50 dark:bg-primary-950/60 border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-300'
+                              : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
+                              }`}
                           >
                             <FiThumbsUp className={`w-3.5 h-3.5 ${hasLiked ? 'fill-primary-500' : ''}`} />
                             <span>Helpful {likesCount > 0 ? `(${likesCount})` : ''}</span>

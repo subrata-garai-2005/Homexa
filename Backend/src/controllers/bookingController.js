@@ -137,6 +137,8 @@ export const createBooking = async (req, res) => {
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({ success: false, message: 'Invalid check-in or check-out date' });
     }
+    // Normalize start to midnight so same-day check-in is not rejected due to time-of-day offset
+    start.setHours(0, 0, 0, 0);
     if (start < today) {
       return res.status(400).json({ success: false, message: 'Check-in date cannot be in the past' });
     }
@@ -327,6 +329,9 @@ export const updateBookingStatus = async (req, res) => {
         reason: req.body.reason || (isHost ? 'Cancelled by host' : 'Cancelled by user'),
         refundAmount: booking.payment?.status === 'paid' ? booking.pricing.totalAmount : 0
       };
+      if (booking.payment?.status === 'paid' && booking.pricing.totalAmount > 0) {
+        booking.payment.status = 'refund_pending';
+      }
     }
 
     await booking.save();
@@ -398,6 +403,9 @@ export const cancelBooking = async (req, res) => {
       reason: req.body.reason || (isHost ? 'Cancelled by host' : 'Cancelled by user'),
       refundAmount
     };
+    if (booking.payment?.status === 'paid' && refundAmount > 0) {
+      booking.payment.status = 'refund_pending';
+    }
 
     await booking.save();
 
