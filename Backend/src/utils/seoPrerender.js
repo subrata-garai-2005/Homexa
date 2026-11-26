@@ -30,15 +30,18 @@ export const getProtocol = (req) => {
  * Returns full base URL e.g. https://example.com
  */
 export const getBaseUrl = (req) => {
+  const protocol = getProtocol(req);
+  const forwardedHost = req.headers['x-forwarded-host']?.split(',')[0].trim();
+  if (forwardedHost && /^[a-zA-Z0-9.-]+(:\d+)?$/.test(forwardedHost)) {
+    return `${protocol}://${forwardedHost}`;
+  }
   if (process.env.FRONTEND_URL) {
     try {
       const parsed = new URL(process.env.FRONTEND_URL);
       return parsed.origin;
     } catch {}
   }
-  const protocol = getProtocol(req);
-  const forwardedHost = req.headers['x-forwarded-host']?.split(',')[0].trim();
-  const rawHost = forwardedHost || req.get('host') || 'homexa-bqs.pages.dev';
+  const rawHost = req.get('host') || 'homexa-bqs.pages.dev';
   const safeHost = /^[a-zA-Z0-9.-]+(:\d+)?$/.test(rawHost) ? rawHost : 'homexa-bqs.pages.dev';
   return `${protocol}://${safeHost}`;
 };
